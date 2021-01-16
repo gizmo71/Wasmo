@@ -37,23 +37,19 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 
 extern "C" MSFS_CALLBACK void module_init(void)
 {
-	cerr << "Wasmo init" << endl;
+	cerr << "Wasmo: init" << endl;
 	g_hSimConnect = 0;
-	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Standalone Module", nullptr, 0, 0, 0);
+	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Wasmo", nullptr, 0, 0, 0);
 	if (hr != S_OK)
 	{
 		cerr << "Wasmo: Could not open SimConnect connection" << endl;
 		return;
 	}
 
-	SIMCONNECT_RECV* pData;
-	DWORD cbData;
-	void* pContext = nullptr;
-	while (SUCCEEDED(SimConnect_GetNextDispatch(g_hSimConnect, &pData, &cbData)))
+	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
 	{
-		WasmoDispatch(pData, cbData, pContext);
+		cerr << "Wasmo: CallDispatch failed" << endl;
 	}
-	cerr << "Wasmo: GetNextDispatch failed" << endl;
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void)
@@ -64,11 +60,11 @@ extern "C" MSFS_CALLBACK void module_deinit(void)
 	if (hr != S_OK)
 	{
 		cerr << "Wasmo: Could not close SimConnect connection" << endl;
-		return;
 	}
+	g_hSimConnect = 0;
 }
 
-void ReceiveEvent(SIMCONNECT_RECV_EVENT* evt) {
+void CALLBACK ReceiveEvent(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "Wasmo: Received event " << evt->uEventID << "\n";
 	switch (evt->uEventID) {
 	case EVENT_TEXT:
@@ -83,7 +79,7 @@ void ReceiveEvent(SIMCONNECT_RECV_EVENT* evt) {
 	}
 }
 
-void ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
+void CALLBACK ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
 	switch (pObjData->dwRequestID) {
 	case REQUEST_SPOILERS: {
@@ -100,12 +96,12 @@ void ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	}
 }
 
-void OnOpen() {
-	cout << "Wasmo OnOpen\n";
+void CALLBACK OnOpen() {
+	cout << "Wasmo: OnOpen" << endl;
 	HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 	if (hr != S_OK)
 	{
-		cerr << "Wasmo: couldn't map client event\n";
+		cerr << "Wasmo: couldn't map client event" << endl;
 		return;
 	}
 	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
@@ -114,17 +110,18 @@ void OnOpen() {
 		SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
 	if (hr != S_OK)
 	{
-		cerr << "Wasmo: couldn't map spoiler data\n";
+		cerr << "Wasmo: couldn't map spoiler data" << endl;
 		return;
 	}
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext)
 {
-	cout << "Wasmo: dispatch " << pData->dwID << "\n";
+	cout << "Wasmo: dispatch " << pData->dwID << endl;
 	switch (pData->dwID)
 	{
 	case SIMCONNECT_RECV_ID_OPEN:
+		cout << "Wasmo: Calling OnOpen" << endl;
 		OnOpen();
 		break;
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
@@ -135,5 +132,11 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		break;
 	default:
 		break;
+	}
+
+	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
+	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
+	{
+		cerr << "Wasmo: secondary CallDispatch failed" << endl;
 	}
 }
