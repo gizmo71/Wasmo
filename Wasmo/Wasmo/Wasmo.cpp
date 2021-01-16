@@ -5,17 +5,19 @@
 #include <iostream>
 #include "Wasmo.h"
 
+using namespace std;
+
 HANDLE g_hSimConnect;
 
-static enum GROUP_ID {
+enum GROUP_ID {
 	GROUP_SPOILERS = 13, // Unused
 };
 
-static enum DATA_DEFINE_ID {
+enum DATA_DEFINE_ID {
 	DEFINITION_SPOILERS = 69,
 };
 
-static enum DATA_REQUEST_ID {
+enum DATA_REQUEST_ID {
 	REQUEST_SPOILERS = 42,
 };
 
@@ -29,25 +31,29 @@ enum eEvents
 	EVENT_SPOILERS_ARM_TOGGLE,
 };
 
-void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
+void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
+
+// Interesting stuff in https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/interface/SimConnectInterface.cpp
 
 extern "C" MSFS_CALLBACK void module_init(void)
 {
-	fprintf(stderr, "Wasmo init\n");
+	cerr << "Wasmo init" << endl;
 	g_hSimConnect = 0;
 	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Standalone Module", nullptr, 0, 0, 0);
 	if (hr != S_OK)
 	{
-		fprintf(stderr, "Could not open SimConnect connection.\n");
+		cerr << "Wasmo: Could not open SimConnect connection" << endl;
 		return;
 	}
-	//TODO: does this need to be in a loop?
-	hr = SimConnect_CallDispatch(g_hSimConnect, MyDispatchProc, nullptr);
-	if (hr != S_OK)
+
+	SIMCONNECT_RECV* pData;
+	DWORD cbData;
+	void* pContext = nullptr;
+	while (SUCCEEDED(SimConnect_GetNextDispatch(g_hSimConnect, &pData, &cbData)))
 	{
-		fprintf(stderr, "Could not call dispatch.\n");
-		return;
+		WasmoDispatch(pData, cbData, pContext);
 	}
+	cerr << "Wasmo: GetNextDispatch failed" << endl;
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void)
@@ -57,28 +63,28 @@ extern "C" MSFS_CALLBACK void module_deinit(void)
 	HRESULT hr = SimConnect_Close(g_hSimConnect);
 	if (hr != S_OK)
 	{
-		fprintf(stderr, "Could not close SimConnect connection.\n");
+		cerr << "Wasmo: Could not close SimConnect connection" << endl;
 		return;
 	}
 }
 
 void ReceiveEvent(SIMCONNECT_RECV_EVENT* evt) {
-	std::cout << "Wasmo received event " << evt->uEventID << "\n";
+	cout << "Wasmo: Received event " << evt->uEventID << "\n";
 	switch (evt->uEventID) {
 	case EVENT_TEXT:
-		fprintf(stderr, "Text event %lx\n", evt->dwData);
+		cerr << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
 		break;
 	case EVENT_SPOILERS_ARM_TOGGLE:
 		SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE);
 		break;
 	default:
-		fprintf(stderr, "Received unknown event: %d\n", evt->uEventID);
+		cerr << "Wasmo: Received unknown event " << evt->uEventID << "\n";
 		break;
 	}
 }
 
 void ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
-	std::cout << "Wasmo received data " << pObjData->dwRequestID << "\n";
+	cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
 	switch (pObjData->dwRequestID) {
 	case REQUEST_SPOILERS: {
 		SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
@@ -89,17 +95,17 @@ void ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		break;
 	}
 	default:
-		fprintf(stderr, "Received unknown data: %d\n", pObjData->dwRequestID);
+		cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
 		break;
 	}
 }
 
 void OnOpen() {
-	std::cout << "Wasmo OnOpen\n";
+	cout << "Wasmo OnOpen\n";
 	HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 	if (hr != S_OK)
 	{
-		std::cerr << "Wasmo couldn't map client event\n";
+		cerr << "Wasmo: couldn't map client event\n";
 		return;
 	}
 	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
@@ -108,14 +114,14 @@ void OnOpen() {
 		SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
 	if (hr != S_OK)
 	{
-		std::cerr << "Wasmo couldn't map spoiler data\n";
+		cerr << "Wasmo: couldn't map spoiler data\n";
 		return;
 	}
 }
 
-void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext)
+void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext)
 {
-	std::cout << "Wasmo dispatch " << pData->dwID << "\n";
+	cout << "Wasmo: dispatch " << pData->dwID << "\n";
 	switch (pData->dwID)
 	{
 	case SIMCONNECT_RECV_ID_OPEN:
