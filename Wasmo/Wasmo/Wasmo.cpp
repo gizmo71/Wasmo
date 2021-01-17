@@ -25,8 +25,7 @@ struct SpoilersData {
 	double spoilersArmed;
 };
 
-enum eEvents
-{
+enum eEvents {
 	EVENT_TEXT,
 	EVENT_SPOILERS_ARM_TOGGLE,
 };
@@ -35,60 +34,57 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 
 // Interesting stuff in https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/interface/SimConnectInterface.cpp
 
-extern "C" MSFS_CALLBACK void module_init(void)
-{
+extern "C" MSFS_CALLBACK void module_init(void) {
 	cerr << "Wasmo: init" << endl;
 	g_hSimConnect = 0;
 	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Wasmo", nullptr, 0, 0, 0);
-	if (hr != S_OK)
-	{
+	if (FAILED(hr)) {
 		cerr << "Wasmo: Could not open SimConnect connection" << endl;
 		return;
 	}
 
-	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
-	{
+	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
 		cerr << "Wasmo: CallDispatch failed" << endl;
 	}
 }
 
-extern "C" MSFS_CALLBACK void module_deinit(void)
-{
+extern "C" MSFS_CALLBACK void module_deinit(void) {
 	if (!g_hSimConnect)
 		return;
 	HRESULT hr = SimConnect_Close(g_hSimConnect);
-	if (hr != S_OK)
-	{
+	if (hr != S_OK) {
 		cerr << "Wasmo: Could not close SimConnect connection" << endl;
 	}
 	g_hSimConnect = 0;
 }
 
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext)
-{
+void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 	cout << "Wasmo: dispatch " << pData->dwID << endl;
-	switch (pData->dwID)
-	{
+	HRESULT hr;
+	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
-		{
-			cout << "Wasmo: OnOpenl map client event" << endl;
-			HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
-			if (hr != S_OK)
-			{
-				cerr << "Wasmo: couldn't map client event" << endl;
-				break;
-			}
-			cout << "Wasmo: add data definition" << endl;
-			hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
-				"SPOILERS ARMED",
-				"Bool",
-				SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
-			if (hr != S_OK)
-			{
-				cerr << "Wasmo: couldn't map spoiler data" << endl;
-			}
-			cout << "Wasmo: done OnOpen" << endl;
-	}
+		cout << "Wasmo: OnOpenl map client event" << endl;
+		hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
+		if (FAILED(hr)) {
+			cerr << "Wasmo: couldn't map client event" << endl;
+		}
+		hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, FALSE);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: couldn't add client event to group" << endl;
+		}
+		hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_STANDARD);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: couldn't set notification group priority" << endl;
+		}
+		cout << "Wasmo: add data definition" << endl;
+		hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+			"SPOILERS ARMED",
+			"Bool",
+			SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
+		if (FAILED(hr)) {
+			cerr << "Wasmo: couldn't map spoiler data" << endl;
+		}
+		cout << "Wasmo: done OnOpen" << endl;
 		break;
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
 		{
@@ -132,7 +128,8 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 
 #if 0
 	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
-	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
+	hr = SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr);
+	if (FAILED(hr))
 		cerr << "Wasmo: secondary CallDispatch failed" << endl;
 	else
 		cout << "Wasmo: secondary CallDispatch succeeded" << endl;
