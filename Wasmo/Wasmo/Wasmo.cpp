@@ -64,79 +64,72 @@ extern "C" MSFS_CALLBACK void module_deinit(void)
 	g_hSimConnect = 0;
 }
 
-void CALLBACK ReceiveEvent(SIMCONNECT_RECV_EVENT* evt) {
-	cout << "Wasmo: Received event " << evt->uEventID << "\n";
-	switch (evt->uEventID) {
-	case EVENT_TEXT:
-		cerr << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
-		break;
-	case EVENT_SPOILERS_ARM_TOGGLE:
-		SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE);
-		break;
-	default:
-		cerr << "Wasmo: Received unknown event " << evt->uEventID << "\n";
-		break;
-	}
-}
-
-void CALLBACK ReceiveData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
-	cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
-	switch (pObjData->dwRequestID) {
-	case REQUEST_SPOILERS: {
-		SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
-		// This is a bit crap since two quick clicks shows correctly, then gets replaced by older one. Pff.
-		char text[25];
-		sprintf(text, "Ground Spoilers %d", (int)pS->spoilersArmed);
-		SimConnect_Text(g_hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 1.0f, EVENT_TEXT, sizeof(text), (void*)text);
-		break;
-	}
-	default:
-		cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
-		break;
-	}
-}
-
-void CALLBACK OnOpen() {
-	cout << "Wasmo: OnOpen" << endl;
-	HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
-	if (hr != S_OK)
-	{
-		cerr << "Wasmo: couldn't map client event" << endl;
-		return;
-	}
-	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
-		"SPOILERS ARMED",
-		"Bool",
-		SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
-	if (hr != S_OK)
-	{
-		cerr << "Wasmo: couldn't map spoiler data" << endl;
-		return;
-	}
-}
-
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext)
 {
 	cout << "Wasmo: dispatch " << pData->dwID << endl;
 	switch (pData->dwID)
 	{
 	case SIMCONNECT_RECV_ID_OPEN:
-		cout << "Wasmo: Calling OnOpen" << endl;
-		OnOpen();
+		{
+			cout << "Wasmo: OnOpen" << endl;
+			HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
+			if (hr != S_OK)
+			{
+				cerr << "Wasmo: couldn't map client event" << endl;
+				break;
+			}
+			hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+				"SPOILERS ARMED",
+				"Bool",
+				SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
+			if (hr != S_OK)
+			{
+				cerr << "Wasmo: couldn't map spoiler data" << endl;
+			}
+		}
 		break;
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
-		ReceiveData((SIMCONNECT_RECV_SIMOBJECT_DATA*)pData);
+		{
+			SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA*)pData;
+			cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
+			switch (pObjData->dwRequestID) {
+			case REQUEST_SPOILERS: {
+				SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
+				// This is a bit crap since two quick clicks shows correctly, then gets replaced by older one. Pff.
+				char text[25];
+				sprintf(text, "Ground Spoilers %d", (int)pS->spoilersArmed);
+				SimConnect_Text(g_hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 1.0f, EVENT_TEXT, sizeof(text), (void*)text);
+				break;
+			}
+			default:
+				cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
+			}
+		}
 		break;
 	case SIMCONNECT_RECV_ID_EVENT:
-		ReceiveEvent((SIMCONNECT_RECV_EVENT*)pData);
+		{
+			SIMCONNECT_RECV_EVENT* evt = (SIMCONNECT_RECV_EVENT*)pData;
+			cout << "Wasmo: Received event " << evt->uEventID << "\n";
+			switch (evt->uEventID) {
+			case EVENT_TEXT:
+				cerr << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
+				break;
+			case EVENT_SPOILERS_ARM_TOGGLE:
+				SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE);
+				break;
+			default:
+				cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
+			}
+		}
 		break;
 	default:
+		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
 
 	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
-	{
 		cerr << "Wasmo: secondary CallDispatch failed" << endl;
-	}
+	else
+		cout << "Wasmo: secondary CallDispatch succeeded" << endl;
 }
