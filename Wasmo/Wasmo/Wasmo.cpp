@@ -71,13 +71,14 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 	{
 	case SIMCONNECT_RECV_ID_OPEN:
 		{
-			cout << "Wasmo: OnOpen" << endl;
+			cout << "Wasmo: OnOpenl map client event" << endl;
 			HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 			if (hr != S_OK)
 			{
 				cerr << "Wasmo: couldn't map client event" << endl;
 				break;
 			}
+			cout << "Wasmo: add data definition" << endl;
 			hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
 				"SPOILERS ARMED",
 				"Bool",
@@ -86,7 +87,8 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 			{
 				cerr << "Wasmo: couldn't map spoiler data" << endl;
 			}
-		}
+			cout << "Wasmo: done OnOpen" << endl;
+	}
 		break;
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
 		{
@@ -126,10 +128,13 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
+	cout << "Wasmo: done responding, will it call again?" << endl;
 
+#if 0
 	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr)))
 		cerr << "Wasmo: secondary CallDispatch failed" << endl;
 	else
 		cout << "Wasmo: secondary CallDispatch succeeded" << endl;
+#endif
 }
