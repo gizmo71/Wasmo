@@ -63,15 +63,17 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 	HRESULT hr;
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
-		cout << "Wasmo: OnOpenl map client event" << endl;
+		cout << "Wasmo: OnOpen map client event" << endl;
 		hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 		if (FAILED(hr)) {
 			cerr << "Wasmo: couldn't map client event" << endl;
 		}
+		cout << "Wasmo: OnOpen add to group" << endl;
 		hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, FALSE);
 		if (FAILED(hr)) {
 			cerr << "Wasmo: couldn't add client event to group" << endl;
 		}
+		cout << "Wasmo: OnOpen set group priority" << endl;
 		hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_STANDARD);
 		if (FAILED(hr)) {
 			cerr << "Wasmo: couldn't set notification group priority" << endl;
