@@ -128,7 +128,7 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 	}
 	cout << "Wasmo: done responding, will it call again?" << endl;
 
-#if 0
+#if 1
 	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
 	hr = SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr);
 	if (FAILED(hr))
