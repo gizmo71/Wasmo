@@ -1,0 +1,44 @@
+WASM: Compiling module Wasmo.wasm
+WASM: Compiled module Wasmo.wasm in 31 seconds (Init: 0 ms / Compile: 774 ms / Optim: 0 ms / Link Init: 293 ms / Link Generate: 29833 ms / Link LLVM: 132 ms).
+WASM: Module Wasmo.wasm loaded...
+WASM: Module Wasmo.wasm initialized.
+Wasmo: init
+Wasmo: map client event
+Wasmo: OnOpen add to group
+Wasmo: OnOpen set group priority
+Wasmo: add data definition
+Wasmo: calling dispatch
+Wasmo: module initialised
+Wasmo: dispatch 2
+Wasmo: OnOpen
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 8 SIMCONNECT_RECV_ID_SIMOBJECT_DATA
+Wasmo: received data 42
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 1 SIMCONNECT_RECV_ID_EXCEPTION
+Wasmo: Received unknown dispatch ID 
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 8
+Wasmo: received data 42
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 1
+Wasmo: Received unknown dispatch ID 
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 8
+Wasmo: received data 42
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 1
+Wasmo: Received unknown dispatch ID 
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 8
+Wasmo: received data 42
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 1
+Wasmo: Received unknown dispatch ID 
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 8
+Wasmo: received data 42
+Wasmo: done responding, will it call again?
+Wasmo: dispatch 1
+Wasmo: Received unknown dispatch ID 
+Wasmo: done responding, will it call again?
