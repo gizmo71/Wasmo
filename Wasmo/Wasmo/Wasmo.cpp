@@ -120,6 +120,43 @@ extern "C" MSFS_CALLBACK void module_deinit(void) {
 	g_hSimConnect = 0;
 }
 
+void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
+	cout << "Wasmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
+	HRESULT hr;
+	switch (evt->uEventID) {
+	case EVENT_TEXT:
+		cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
+		break;
+	case EVENT_SPOILERS_ARM_TOGGLE:
+		cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
+		hr = SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: Could not request spoiler data as the result of an event" << endl;
+		}
+		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: Could not refire arm spoiler event" << endl;
+		}
+		break;
+	case EVENT_RUDDER_SET:
+		cout << "Wasmo: user has asked to set rudder to " << static_cast<long>(evt->dwData) << endl;
+		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: Could not refire rudder event" << endl;
+		}
+		break;
+	case EVENT_TILLER_SET:
+		cout << "Wasmo: user has asked to set tiller to " << evt->dwData << endl;
+		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
+		if (FAILED(hr)) {
+			cerr << "Wasmo: Could not refire tiller event" << endl;
+		}
+		break;
+	default:
+		cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
+	}
+}
+
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 	cout << "Wasmo: dispatch " << pData->dwID << endl;
 	HRESULT hr;
@@ -152,43 +189,9 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		}
 		break;
 	}
-	case SIMCONNECT_RECV_ID_EVENT: {
-		SIMCONNECT_RECV_EVENT* evt = (SIMCONNECT_RECV_EVENT*)pData;
-		cout << "Wasmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
-		switch (evt->uEventID) {
-		case EVENT_TEXT:
-			cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
-			break;
-		case EVENT_SPOILERS_ARM_TOGGLE:
-			cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
-			hr = SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
-			if (FAILED(hr)) {
-				cerr << "Wasmo: Could not request spoiler data as the result of an event" << endl;
-			}
-			hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
-			if (FAILED(hr)) {
-				cerr << "Wasmo: Could not refire arm spoiler event" << endl;
-			}
-			break;
-		case EVENT_RUDDER_SET:
-			cout << "Wasmo: user has asked to set rudder to " << static_cast<long>(evt->dwData) << endl;
-			hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-			if (FAILED(hr)) {
-				cerr << "Wasmo: Could not refire rudder event" << endl;
-			}
-			break;
-		case EVENT_TILLER_SET:
-			cout << "Wasmo: user has asked to set tiller to " << evt->dwData << endl;
-			hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-			if (FAILED(hr)) {
-				cerr << "Wasmo: Could not refire tiller event" << endl;
-			}
-			break;
-		default:
-			cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
-		}
+	case SIMCONNECT_RECV_ID_EVENT:
+		HandleEvent((SIMCONNECT_RECV_EVENT*)pData);
 		break;
-	}
 	default:
 		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
