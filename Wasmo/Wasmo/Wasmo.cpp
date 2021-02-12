@@ -23,6 +23,7 @@ enum DATA_REQUEST_ID {
 
 struct SpoilersData {
 	double spoilersArmed;
+	double spoilerHandle;
 };
 
 enum eEvents {
@@ -43,9 +44,50 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		return;
 	}
 
+// Does this have to all be done before CallDispatch starts, with no subsequent registrations possible?
+	cout << "Wasmo: map client event" << endl;
+	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't map client event" << endl;
+	}
+	cout << "Wasmo: OnOpen add to group" << endl;
+	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, TRUE);
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't add client event to group" << endl;
+	}
+	cout << "Wasmo: OnOpen set group priority" << endl;
+	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't set notification group priority" << endl;
+	}
+
+	cout << "Wasmo: add data definition" << endl;
+	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+		"SPOILERS ARMED",
+		"Bool",
+		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
+		0.5);
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't map arming state to spoiler data" << endl;
+	}
+	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+		"SPOILERS HANDLE POSITION",
+		"percent",
+		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
+		2.5);
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't map handle position to spoiler data" << endl;
+	}
+	hr = SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0);
+	if (FAILED(hr)) {
+		cerr << "Wasmo: couldn't request spoiler data" << endl;
+	}
+
+	cout << "Wasmo: calling dispatch" << endl;
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
 		cerr << "Wasmo: CallDispatch failed" << endl;
 	}
+	cout << "Wasmo: module initialised" << endl;
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void) {
@@ -63,77 +105,50 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 	HRESULT hr;
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
-		cout << "Wasmo: OnOpen map client event" << endl;
-		hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
-		if (FAILED(hr)) {
-			cerr << "Wasmo: couldn't map client event" << endl;
-		}
-		cout << "Wasmo: OnOpen add to group" << endl;
-		hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, FALSE);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: couldn't add client event to group" << endl;
-		}
-		cout << "Wasmo: OnOpen set group priority" << endl;
-		hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_STANDARD);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: couldn't set notification group priority" << endl;
-		}
-		cout << "Wasmo: add data definition" << endl;
-		hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
-			"SPOILERS ARMED",
-			"Bool",
-			SIMCONNECT_DATATYPE_FLOAT64); // Should be INT32 but that doesn't appear to work properly. :-(
-		if (FAILED(hr)) {
-			cerr << "Wasmo: couldn't map spoiler data" << endl;
-		}
-		cout << "Wasmo: done OnOpen" << endl;
+		cout << "Wasmo: OnOpen" << endl;
 		break;
-	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
-		{
-			SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA*)pData;
-			cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
-			switch (pObjData->dwRequestID) {
-			case REQUEST_SPOILERS: {
-				SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
-				// This is a bit crap since two quick clicks shows correctly, then gets replaced by older one. Pff.
-				char text[25];
-				sprintf(text, "Ground Spoilers %d", (int)pS->spoilersArmed);
-				SimConnect_Text(g_hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 1.0f, EVENT_TEXT, sizeof(text), (void*)text);
-				break;
-			}
-			default:
-				cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
-			}
+	case SIMCONNECT_RECV_ID_EXCEPTION: {
+		cout << "Wasmo: Exception :-(" << endl;
+		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
+		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
+		cout << "Wasmo: " << exception->dwException << endl;
+		break;
+	}
+	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
+		SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA*)pData;
+		cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
+		switch (pObjData->dwRequestID) {
+		case REQUEST_SPOILERS: {
+			SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
+			// This is a bit crap since two quick clicks shows correctly, then gets replaced by older one. Pff.
+			char text[100];
+			sprintf(text, "Ground Spoilers armed? %d Speed brake position %d", (int)pS->spoilersArmed, (int)pS->spoilerHandle);
+			SimConnect_Text(g_hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 1.0f, EVENT_TEXT, sizeof(text), (void*)text);
+			break;
+		}
+		default:
+			cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
 		}
 		break;
-	case SIMCONNECT_RECV_ID_EVENT:
-		{
-			SIMCONNECT_RECV_EVENT* evt = (SIMCONNECT_RECV_EVENT*)pData;
-			cout << "Wasmo: Received event " << evt->uEventID << "\n";
-			switch (evt->uEventID) {
-			case EVENT_TEXT:
-				cerr << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
-				break;
-			case EVENT_SPOILERS_ARM_TOGGLE:
-				SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE);
-				break;
-			default:
-				cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
-			}
+	}
+	case SIMCONNECT_RECV_ID_EVENT: {
+		SIMCONNECT_RECV_EVENT* evt = (SIMCONNECT_RECV_EVENT*)pData;
+		cout << "Wasmo: Received event " << evt->uEventID << "\n";
+		switch (evt->uEventID) {
+		case EVENT_TEXT:
+			cerr << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
+			break;
+		case EVENT_SPOILERS_ARM_TOGGLE:
+			SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE);
+			break;
+		default:
+			cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
 		}
 		break;
+	}
 	default:
 		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
 	cout << "Wasmo: done responding, will it call again?" << endl;
-
-#if 1
-	cout << "Wasmo: about to set secondary dispatch " << pData->dwID << endl;
-	hr = SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr);
-	if (FAILED(hr))
-		cerr << "Wasmo: secondary CallDispatch failed" << endl;
-	else
-		cout << "Wasmo: secondary CallDispatch succeeded" << endl;
-#endif
 }
