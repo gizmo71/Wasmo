@@ -148,12 +148,12 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 
 void SendDemand() {
 	//TODO: why are these all coming out on different lines?!
-	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
+	cout << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
 		<< " at " << speed << "kts and on ground? " << (onGround ? "Yes" : "No") << endl;
 	// Could this actually be enough to solve our immediate problem of braking buggering up the tiller?
 	// See also https://github.com/flybywiresim/a32nx/pull/769
 	auto modulatedDemand = max(min(pedalsDemand + tillerDemand, 1.0), -1.0);
-	cerr << "RudderTillerzmo: modulated demand " << modulatedDemand << endl;
+	cout << "RudderTillerzmo: modulated demand " << modulatedDemand << endl;
 	auto value = static_cast<DWORD>(maxRawMagnitude * modulatedDemand);
 	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
