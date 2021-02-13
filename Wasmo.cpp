@@ -9,104 +9,90 @@ using namespace std;
 HANDLE g_hSimConnect;
 
 enum GROUP_ID {
-	GROUP_SPOILERS = 13,
-	GROUP_RUDDER_TILLER,
+	GROUP_RUDDER_TILLER = 13,
 };
 
 enum DATA_DEFINE_ID {
-	DEFINITION_SPOILERS = 69,
+	DEFINITION_SPEED = 69,
 };
 
 enum DATA_REQUEST_ID {
-	REQUEST_SPOILERS = 42,
+	REQUEST_SPEED = 42,
 };
 
-struct SpoilersData {
-	double spoilersArmed;
-	double spoilerHandle;
+struct AllData {
+	double groundSpeed;
+	double radioAlt;
+	bool isOnGround;
 };
 
 enum eEvents {
-	EVENT_TEXT,
-	EVENT_SPOILERS_ARM_TOGGLE,
-	EVENT_RUDDER_SET,
-	EVENT_TILLER_SET,
+	EVENT_RUDDER,
+	EVENT_TILLER,
 };
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 
-// Interesting stuff in https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/interface/SimConnectInterface.cpp
-
 extern "C" MSFS_CALLBACK void module_init(void) {
-	cerr << "Wasmo: init" << endl;
+	cerr << "RudderTillerzmo: init" << endl;
 	g_hSimConnect = 0;
-	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Wasmo", nullptr, 0, 0, 0);
+	HRESULT hr = SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0);
 	if (FAILED(hr)) {
-		cerr << "Wasmo: Could not open SimConnect connection" << endl;
+		cerr << "RudderTillerzmo: Could not open SimConnect connection" << endl;
 		return;
 	}
 
 // Does this have to all be done before CallDispatch starts, with no subsequent registrations possible?
-	cout << "Wasmo: map client event" << endl;
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map client event" << endl;
+	cout << "RudderTillerzmo: map client events" << endl;
+	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER, "AXIS_RUDDER_SET"))) {
+		cerr << "RudderTillerzmo: couldn't map rudder set event" << endl;
 	}
-	cout << "Wasmo: OnOpen add to group" << endl;
-	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, TRUE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't add client event to group" << endl;
-	}
-	cout << "Wasmo: OnOpen set group priority" << endl;
-	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't set notification group priority" << endl;
+	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_TILLER, "RUDDER_AXIS_MINUS"))) {
+		cerr << "RudderTillerzmo: couldn't map tiller set event" << endl;
 	}
 
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER_SET, "AXIS_RUDDER_SET");
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map rudder set event" << endl;
+	cout << "RudderTillerzmo: OnOpen add to group" << endl;
+	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER, TRUE))) {
+		cerr << "RudderTillerzmo: couldn't add rudder event to group" << endl;
 	}
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_TILLER_SET, "RUDDER_AXIS_MINUS");
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map tiller set event" << endl;
-	}
-	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER_SET, TRUE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't add rudder event to group" << endl;
-	}
-	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_TILLER_SET, TRUE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't add steering event to group" << endl;
-	}
-	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't set rudder/tiller notification group priority" << endl;
+	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_TILLER, TRUE))) {
+		cerr << "RudderTillerzmo: couldn't add steering event to group" << endl;
 	}
 
-	cout << "Wasmo: add data definition" << endl;
-	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
-		"SPOILERS ARMED",
-		"Bool",
-		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
-		0.5);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map arming state to spoiler data" << endl;
-	}
-	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
-		"SPOILERS HANDLE POSITION",
-		"percent",
-		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
-		2.5);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map handle position to spoiler data" << endl;
+	cout << "RudderTillerzmo: OnOpen set group priority" << endl;
+	if (FAILED(SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE))) {
+		cerr << "RudderTillerzmo: couldn't set rudder/tiller notification group priority" << endl;
 	}
 
-	cout << "Wasmo: calling dispatch" << endl;
+	cout << "RudderTillerzmo: add data definition" << endl;
+	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
+		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, 0.5)))
+	{
+		cerr << "RudderTillerzmo: couldn't map ground velocity data" << endl;
+	}
+	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
+		"PLANE ALT ABOVE GROUND", "Feet", SIMCONNECT_DATATYPE_FLOAT64, 0.5)))
+	{
+		cerr << "RudderTillerzmo: couldn't map radio alt data" << endl;
+	}
+	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
+		"SIM ON GROUND", "Bool", SIMCONNECT_DATATYPE_INT32, 0.5)))
+	{
+		cerr << "RudderTillerzmo: couldn't map on ground data" << endl;
+	}
+
+	cout << "RudderTillerzmo: requesting data feed" << endl;
+	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPEED, DEFINITION_SPEED,
+		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0)))
+	{
+		cerr << "RudderTillerzmo: Could not request data feed" << endl;
+	}
+
+	cout << "RudderTillerzmo: calling dispatch" << endl;
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
-		cerr << "Wasmo: CallDispatch failed" << endl;
+		cerr << "RudderTillerzmo: CallDispatch failed" << endl;
 	}
-	cout << "Wasmo: module initialised" << endl;
+	cout << "RudderTillerzmo: module initialised" << endl;
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void) {
@@ -114,86 +100,80 @@ extern "C" MSFS_CALLBACK void module_deinit(void) {
 		return;
 	HRESULT hr = SimConnect_Close(g_hSimConnect);
 	if (hr != S_OK) {
-		cerr << "Wasmo: Could not close SimConnect connection" << endl;
+		cerr << "RudderTillerzmo: Could not close SimConnect connection" << endl;
 	}
 	g_hSimConnect = 0;
 }
 
+double pedalsDemand = 0.0;
+double tillerDemand = 0.0;
+double speed = 0.0;
+
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
-	cout << "Wasmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
-	HRESULT hr;
+	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 	switch (evt->uEventID) {
-	case EVENT_TEXT:
-		cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
-		break;
-	case EVENT_SPOILERS_ARM_TOGGLE:
-		cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
-		hr = SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not request spoiler data as the result of an event" << endl;
-		}
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not refire arm spoiler event" << endl;
+	case EVENT_RUDDER:
+		pedalsDemand = 6.0 * static_cast<long>(evt->dwData) / 16384.0;
+		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
+		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+			cerr << "RudderTillerzmo: Could not refire rudder event" << endl;
 		}
 		break;
-	case EVENT_RUDDER_SET:
-		cout << "Wasmo: user has asked to set rudder to " << static_cast<long>(evt->dwData) << endl;
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not refire rudder event" << endl;
-		}
-		break;
-	case EVENT_TILLER_SET:
-		cout << "Wasmo: user has asked to set tiller to " << evt->dwData << endl;
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not refire tiller event" << endl;
+	case EVENT_TILLER:
+		tillerDemand = 75.0 * static_cast<long>(evt->dwData) / 16384.0;
+		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
+		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+			cerr << "RudderTillerzmo: Could not refire tiller event" << endl;
 		}
 		break;
 	default:
-		cerr << "Wasmo: Received unknown event " << evt->uEventID << endl;
+		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
 	}
 }
 
+void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
+	cout << "RudderTillerzmo: received data " << pObjData->dwRequestID << endl;
+	switch (pObjData->dwRequestID) {
+	case REQUEST_SPEED: {
+		AllData* pS = (AllData*)(&pObjData->dwData);
+		speed = !pS->isOnGround ? 200 : (pS->radioAlt > 0 ? 190 : pS->groundSpeed);
+		cout << "RudderTillerzmo: updated speed to " << speed << endl;
+		break;
+	}
+	default:
+		cerr << "RudderTillerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+	}
+}
+
+void SendDemand() {
+	cerr << "RudderTillerzmo: TODO: send demand" << endl;
+}
+
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
-	cout << "Wasmo: dispatch " << pData->dwID << endl;
-	HRESULT hr;
+	cout << "RudderTillerzmo: dispatch " << pData->dwID << endl;
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
-		cout << "Wasmo: OnOpen" << endl;
+		cout << "RudderTillerzmo: OnOpen" << endl;
 		break;
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		cerr << "Wasmo: Exception :-(" << endl;
+		cerr << "RudderTillerzmo: Exception :-(" << endl;
 		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
 		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
-		cerr << "Wasmo: " << exception->dwException << endl;
+		cerr << "RudderTillerzmo: " << exception->dwException << endl;
 		break;
 	}
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
-		SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA*)pData;
-		cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
-		switch (pObjData->dwRequestID) {
-		case REQUEST_SPOILERS: {
-			SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
-			// This is a bit crap since two quick clicks shows correctly, then gets replaced by older one. Pff.
-			char text[100];
-			sprintf(text, "Ground Spoilers armed? %d Speed brake position %d", (int)pS->spoilersArmed, (int)pS->spoilerHandle);
-			//SimConnect_Text(g_hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 1.0f, EVENT_TEXT, sizeof(text), (void*)text);
-			cout << "Wasmo: not bothering to show " << text << endl;
-			break;
-		}
-		default:
-			cerr << "Wasmo: Received unknown data: " << pObjData->dwRequestID << endl;
-		}
+		HandleData((SIMCONNECT_RECV_SIMOBJECT_DATA*)pData);
+		SendDemand();
 		break;
 	}
 	case SIMCONNECT_RECV_ID_EVENT:
 		HandleEvent((SIMCONNECT_RECV_EVENT*)pData);
+		SendDemand();
 		break;
 	default:
-		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
+		cerr << "RudderTillerzmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
-	cout << "Wasmo: done responding, will it call again?" << endl;
+	cout << "RudderTillerzmo: done responding" << endl;
 }
