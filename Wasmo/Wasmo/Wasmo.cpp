@@ -11,7 +11,6 @@ HANDLE g_hSimConnect;
 
 enum GROUP_ID {
 	GROUP_SPOILERS = 13,
-	GROUP_RUDDER_TILLER,
 };
 
 enum DATA_DEFINE_ID {
@@ -30,8 +29,6 @@ struct SpoilersData {
 enum eEvents {
 	EVENT_TEXT,
 	EVENT_SPOILERS_ARM_TOGGLE,
-	EVENT_RUDDER_SET,
-	EVENT_TILLER_SET,
 };
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
@@ -62,27 +59,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
 	if (FAILED(hr)) {
 		cerr << "Wasmo: couldn't set notification group priority" << endl;
-	}
-
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER_SET, "AXIS_RUDDER_SET");
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map rudder set event" << endl;
-	}
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_TILLER_SET, "RUDDER_AXIS_MINUS");
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't map tiller set event" << endl;
-	}
-	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER_SET, TRUE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't add rudder event to group" << endl;
-	}
-	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_TILLER_SET, TRUE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't add steering event to group" << endl;
-	}
-	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
-	if (FAILED(hr)) {
-		cerr << "Wasmo: couldn't set rudder/tiller notification group priority" << endl;
 	}
 
 	cout << "Wasmo: add data definition" << endl;
@@ -136,20 +112,6 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
 		if (FAILED(hr)) {
 			cerr << "Wasmo: Could not refire arm spoiler event" << endl;
-		}
-		break;
-	case EVENT_RUDDER_SET:
-		cout << "Wasmo: user has asked to set rudder to " << static_cast<long>(evt->dwData) << endl;
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not refire rudder event" << endl;
-		}
-		break;
-	case EVENT_TILLER_SET:
-		cout << "Wasmo: user has asked to set tiller to " << evt->dwData << endl;
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER_SET, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
-			cerr << "Wasmo: Could not refire tiller event" << endl;
 		}
 		break;
 	default:
