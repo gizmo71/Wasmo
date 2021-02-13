@@ -15,6 +15,7 @@
     <ProjectGuid>{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}</ProjectGuid>
     <RootNamespace>Module</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>RudderTillerzmo</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'" Label="Configuration">
