@@ -175,7 +175,8 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 }
 
 void SendDemand() {
-	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << "+" << tillerDemand
+	//TODO: why are these all coming out on different lines?!
+	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
 		<< " at " << speed << "kts and " << alt << "ft, on ground? " << onGround << endl;
 }
 
