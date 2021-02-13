@@ -3,7 +3,6 @@
 #include <SimConnect.h>
 
 #include <iostream>
-#include "Wasmo.h"
 
 using namespace std;
 
