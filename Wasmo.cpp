@@ -14,21 +14,16 @@ enum GROUP_ID {
 
 enum DATA_DEFINE_ID {
 	DEFINITION_SPEED = 69,
-	DEFINITION_ALT,
 	DEFINITION_ON_GROUND,
 };
 
 enum DATA_REQUEST_ID {
 	REQUEST_SPEED = 42,
-	REQUEST_ALT,
 	REQUEST_ON_GROUND,
 };
 
 struct SpeedData {
 	double groundSpeed;
-};
-struct AltData {
-	double radioAlt;
 };
 struct GroundData {
 	int32_t isOnGround;
@@ -78,11 +73,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	{
 		cerr << "RudderTillerzmo: couldn't map ground velocity data" << endl;
 	}
-	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_ALT,
-		"PLANE ALT ABOVE GROUND", "Feet", SIMCONNECT_DATATYPE_FLOAT64, 0.5)))
-	{
-		cerr << "RudderTillerzmo: couldn't map radio alt data" << endl;
-	}
 	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_ON_GROUND,
 		"SIM ON GROUND", "Bool", SIMCONNECT_DATATYPE_INT32, 0.5)))
 	{
@@ -94,11 +84,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0)))
 	{
 		cerr << "RudderTillerzmo: Could not request speed feed" << endl;
-	}
-	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_ALT, DEFINITION_ALT,
-		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0)))
-	{
-		cerr << "RudderTillerzmo: Could not request alt feed" << endl;
 	}
 	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_ON_GROUND, DEFINITION_ON_GROUND,
 		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0)))
@@ -126,21 +111,20 @@ extern "C" MSFS_CALLBACK void module_deinit(void) {
 double pedalsDemand = 0.0;
 double tillerDemand = 0.0;
 double speed = 0.0;
-double alt = 0.0;
 bool onGround = FALSE;
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 	switch (evt->uEventID) {
 	case EVENT_RUDDER:
-		pedalsDemand = 6.0 * static_cast<long>(evt->dwData) / 16384.0;
+		pedalsDemand = static_cast<long>(evt->dwData) / 16384.0;
 		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
 		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 			cerr << "RudderTillerzmo: Could not refire rudder event" << endl;
 		}
 		break;
 	case EVENT_TILLER:
-		tillerDemand = 75.0 * static_cast<long>(evt->dwData) / 16384.0;
+		tillerDemand = static_cast<long>(evt->dwData) / 16384.0;
 		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
 		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 			cerr << "RudderTillerzmo: Could not refire tiller event" << endl;
@@ -159,11 +143,6 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		cout << "RudderTillerzmo: updated speed to " << speed << endl;
 		break;
 	}
-	case REQUEST_ALT: {
-		alt = ((AltData*)(&pObjData->dwData))->radioAlt;
-		cout << "RudderTillerzmo: updated radio alt to " << alt << endl;
-		break;
-	}
 	case REQUEST_ON_GROUND: {
 		onGround = ((GroundData*)(&pObjData->dwData))->isOnGround;
 		cout << "RudderTillerzmo: updated on ground to " << onGround << endl;
@@ -177,7 +156,7 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 void SendDemand() {
 	//TODO: why are these all coming out on different lines?!
 	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
-		<< " at " << speed << "kts and " << alt << "ft, on ground? " << onGround << endl;
+		<< " at " << speed << "kts and on ground? " << onGround << endl;
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
