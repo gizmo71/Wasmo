@@ -37,10 +37,10 @@ enum eEvents {
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 
 extern "C" MSFS_CALLBACK void module_init(void) {
-	cerr << "RudderTillerzmo: init" << endl;
+	cout << "RudderTillerzmo: init" << endl;
+
 	g_hSimConnect = 0;
-	HRESULT hr = SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0);
-	if (FAILED(hr)) {
+	if (FAILED(SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0))) {
 		cerr << "RudderTillerzmo: Could not open SimConnect connection" << endl;
 		return;
 	}
@@ -99,36 +99,29 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void) {
-	if (!g_hSimConnect)
-		return;
-	HRESULT hr = SimConnect_Close(g_hSimConnect);
-	if (hr != S_OK) {
+	if (g_hSimConnect && FAILED(SimConnect_Close(g_hSimConnect))) {
 		cerr << "RudderTillerzmo: Could not close SimConnect connection" << endl;
 	}
 	g_hSimConnect = 0;
 }
 
-double pedalsDemand = 0.0;
-double tillerDemand = 0.0;
-double speed = 0.0;
+auto pedalsDemand = 0.0;
+auto tillerDemand = 0.0;
+auto speed = 0.0;
 bool onGround = FALSE;
+
+const auto maxRawMagnitude = 16384.0;
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 	switch (evt->uEventID) {
 	case EVENT_RUDDER:
-		pedalsDemand = static_cast<long>(evt->dwData) / 16384.0;
+		pedalsDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
 		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
-		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-			cerr << "RudderTillerzmo: Could not refire rudder event" << endl;
-		}
 		break;
 	case EVENT_TILLER:
-		tillerDemand = static_cast<long>(evt->dwData) / 16384.0;
+		tillerDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
 		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
-		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_TILLER, evt->dwData, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-			cerr << "RudderTillerzmo: Could not refire tiller event" << endl;
-		}
 		break;
 	default:
 		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
@@ -157,6 +150,14 @@ void SendDemand() {
 	//TODO: why are these all coming out on different lines?!
 	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
 		<< " at " << speed << "kts and on ground? " << (onGround ? "Yes" : "No") << endl;
+	// Could this actually be enough to solve our immediate problem of braking buggering up the tiller?
+	// See also https://github.com/flybywiresim/a32nx/pull/769
+	auto modulatedDemand = min(max(pedalsDemand + tillerDemand, 1.0), -1.0);
+	cerr << "RudderTillerzmo: modulated demand " << modulatedDemand << endl;
+	auto value = static_cast<DWORD>(maxRawMagnitude * modulatedDemand);
+	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
+	}
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
