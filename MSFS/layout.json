@@ -1,9 +1,9 @@
 {
   "content": [
     {
-      "path": "modules/Wasmo.wasm",
+      "path": "modules/RudderTillerzmo.wasm",
       "size": 1,
-      "date": 132400215225729554
+      "date": 132400215225729555
     }
   ]
 }
