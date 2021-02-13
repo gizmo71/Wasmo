@@ -156,7 +156,7 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 void SendDemand() {
 	//TODO: why are these all coming out on different lines?!
 	cerr << "RudderTillerzmo: TODO: send demand for " << pedalsDemand << " plus " << tillerDemand
-		<< " at " << speed << "kts and on ground? " << onGround << endl;
+		<< " at " << speed << "kts and on ground? " << (onGround ? "Yes" : "No") << endl;
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
