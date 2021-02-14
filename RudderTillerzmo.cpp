@@ -41,7 +41,9 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 const double speedEpsilon = 0.1;
 
 extern "C" MSFS_CALLBACK void module_init(void) {
-	cout << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
+#if _DEBUG
+	clog << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
+#endif
 
 	g_hSimConnect = 0;
 	if (FAILED(SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0))) {
@@ -49,8 +51,9 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		return;
 	}
 
-// Does this have to all be done before CallDispatch starts, with no subsequent registrations possible?
+#if _DEBUG
 	cout << "RudderTillerzmo: map client events" << endl;
+#endif
 	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER, "AXIS_RUDDER_SET"))) {
 		cerr << "RudderTillerzmo: couldn't map rudder set event" << endl;
 	}
@@ -58,7 +61,9 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		cerr << "RudderTillerzmo: couldn't map tiller set event" << endl;
 	}
 
+#if _DEBUG
 	cout << "RudderTillerzmo: OnOpen add to group" << endl;
+#endif
 	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER, TRUE))) {
 		cerr << "RudderTillerzmo: couldn't add rudder event to group" << endl;
 	}
@@ -66,12 +71,16 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		cerr << "RudderTillerzmo: couldn't add steering event to group" << endl;
 	}
 
+#if _DEBUG
 	cout << "RudderTillerzmo: OnOpen set group priority" << endl;
+#endif
 	if (FAILED(SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE))) {
 		cerr << "RudderTillerzmo: couldn't set rudder/tiller notification group priority" << endl;
 	}
 
+#if _DEBUG
 	cout << "RudderTillerzmo: add data definition" << endl;
+#endif
 	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
 		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, speedEpsilon)))
 	{
@@ -83,7 +92,9 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		cerr << "RudderTillerzmo: couldn't map on ground data" << endl;
 	}
 
+#if _DEBUG
 	cout << "RudderTillerzmo: requesting data feeds" << endl;
+#endif
 	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPEED, DEFINITION_SPEED,
 		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 10, 0)))
 	{
@@ -95,11 +106,16 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		cerr << "RudderTillerzmo: Could not request on ground feed" << endl;
 	}
 
+#if _DEBUG
 	cout << "RudderTillerzmo: calling dispatch" << endl;
+#endif
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
 		cerr << "RudderTillerzmo: CallDispatch failed" << endl;
 	}
+
+#if _DEBUG
 	cout << "RudderTillerzmo: module initialised" << endl;
+#endif
 }
 
 extern "C" MSFS_CALLBACK void module_deinit(void) {
@@ -117,15 +133,21 @@ bool onGround = FALSE;
 const auto maxRawMagnitude = 16384.0;
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
+#if _DEBUG
 	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
+#endif
 	switch (evt->uEventID) {
 	case EVENT_RUDDER:
 		pedalsDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
+#if _DEBUG
 		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
+#endif
 		break;
 	case EVENT_TILLER:
 		tillerDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
+#if _DEBUG
 		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
+#endif
 		break;
 	default:
 		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
@@ -133,16 +155,22 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 }
 
 void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
+#if _DEBUG
 	cout << "RudderTillerzmo: received data " << pObjData->dwRequestID << endl;
+#endif
 	switch (pObjData->dwRequestID) {
 	case REQUEST_SPEED: {
 		speed = ((SpeedData*)(&pObjData->dwData))->groundSpeed;
+#if _DEBUG
 		cout << "RudderTillerzmo: updated speed to " << speed << endl;
+#endif
 		break;
 	}
 	case REQUEST_ON_GROUND: {
 		onGround = ((GroundData*)(&pObjData->dwData))->isOnGround;
+#if _DEBUG
 		cout << "RudderTillerzmo: updated on ground to " << onGround << endl;
+#endif
 		break;
 	}
 	default:
@@ -151,8 +179,10 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 }
 
 void SendDemand() {
+#if _DEBUG
 	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
 		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
+#endif
 	// See also https://github.com/flybywiresim/a32nx/pull/769
 	// When stopped, allow full pedal control (for control check).
 	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
@@ -162,8 +192,10 @@ void SendDemand() {
 	auto pedalsFactor = onGround && speed > speedEpsilon ?
 		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
 	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
+#if _DEBUG
 	cout << "RudderTillerzmo: modulated demand " << modulatedDemand
 		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
+#endif
 	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
 	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
@@ -171,10 +203,14 @@ void SendDemand() {
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
+#if _DEBUG
 	cout << "RudderTillerzmo: dispatch " << pData->dwID << endl;
+#endif
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
+#if _DEBUG
 		cout << "RudderTillerzmo: OnOpen" << endl;
+#endif
 		break;
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
 		cerr << "RudderTillerzmo: Exception :-(" << endl;
@@ -196,5 +232,7 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		cerr << "RudderTillerzmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
+#if _DEBUG
 	cout << "RudderTillerzmo: done responding" << endl;
+#endif
 }
