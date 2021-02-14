@@ -28,6 +28,7 @@ struct SpoilersData {
 };
 
 enum eEvents {
+	EVENT_AIRCRAFT_LOADED = 4,
 	EVENT_TEXT,
 	EVENT_SPOILERS_ARM_TOGGLE,
 };
@@ -80,6 +81,11 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		cerr << "Wasmo: couldn't map handle position to spoiler data" << endl;
 	}
 
+	cout << "Wasmo: subscribing to system events" << endl;
+	if (FAILED(SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_AIRCRAFT_LOADED, "AircraftLoaded"))) {
+		cerr << "Wasmo: couldn't subscribe to AircraftLoaded" << endl;
+	}
+
 	cout << "Wasmo: calling dispatch" << endl;
 	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
 		cerr << "Wasmo: CallDispatch failed" << endl;
@@ -103,6 +109,10 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	switch (evt->uEventID) {
 	case EVENT_TEXT:
 		cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
+		break;
+	case EVENT_AIRCRAFT_LOADED:
+		SIMCONNECT_RECV_EVENT_FILENAME* eventFilename = (SIMCONNECT_RECV_EVENT_FILENAME*)evt;
+		cout << "Wasmo: aircraft loaded  " << eventFilename->szFileName << endl;
 		break;
 	case EVENT_SPOILERS_ARM_TOGGLE:
 		cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
