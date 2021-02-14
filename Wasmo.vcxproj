@@ -152,7 +152,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Wasmo.cpp" />
+    <ClCompile Include="RudderTillerzmo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="layout.json" />
