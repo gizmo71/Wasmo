@@ -151,10 +151,8 @@ void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 }
 
 void SendDemand() {
-	//TODO: why are these all coming out on different lines?!
 	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
 		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
-	// Could this actually be enough to solve our immediate problem of braking buggering up the tiller?
 	// See also https://github.com/flybywiresim/a32nx/pull/769
 	// When stopped, allow full pedal control (for control check).
 	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
