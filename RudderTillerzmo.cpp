@@ -38,6 +38,8 @@ enum eEvents {
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 
+const double speedEpsilon = 0.1;
+
 extern "C" MSFS_CALLBACK void module_init(void) {
 	cout << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
 
@@ -71,7 +73,7 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 
 	cout << "RudderTillerzmo: add data definition" << endl;
 	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
-		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, 0.5)))
+		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, speedEpsilon)))
 	{
 		cerr << "RudderTillerzmo: couldn't map ground velocity data" << endl;
 	}
@@ -83,7 +85,7 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 
 	cout << "RudderTillerzmo: requesting data feeds" << endl;
 	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPEED, DEFINITION_SPEED,
-		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0)))
+		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 10, 0)))
 	{
 		cerr << "RudderTillerzmo: Could not request speed feed" << endl;
 	}
@@ -154,8 +156,16 @@ void SendDemand() {
 		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
 	// Could this actually be enough to solve our immediate problem of braking buggering up the tiller?
 	// See also https://github.com/flybywiresim/a32nx/pull/769
-	auto modulatedDemand = max(min(pedalsDemand + (onGround ? tillerDemand : 0.0), 1.0), -1.0);
-	cout << "RudderTillerzmo: modulated demand " << modulatedDemand << endl;
+	// When stopped, allow full pedal control (for control check).
+	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
+	// The tiller should change linearly up to 80 knots, when the tiller should have no effect.
+	// The pedals should change linearly up to 40 knots, above which they should have full effect.
+	auto tillerFactor = onGround ? tillerDemand * min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
+	auto pedalsFactor = onGround && speed > speedEpsilon ?
+		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
+	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
+	cout << "RudderTillerzmo: modulated demand " << modulatedDemand
+		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
 	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
 	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
