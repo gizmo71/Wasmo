@@ -152,10 +152,9 @@ void SendDemand() {
 		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
 	// Could this actually be enough to solve our immediate problem of braking buggering up the tiller?
 	// See also https://github.com/flybywiresim/a32nx/pull/769
-	auto modulatedDemand = max(min(pedalsDemand + tillerDemand, 1.0), -1.0);
+	auto modulatedDemand = max(min(pedalsDemand + (onGround ? tillerDemand : 0.0), 1.0), -1.0);
 	cout << "RudderTillerzmo: modulated demand " << modulatedDemand << endl;
-//TODO: the double version is right but the conversion back to DWORD fails for negative values. :-(
-	auto value = static_cast<DWORD>(maxRawMagnitude * modulatedDemand);
+	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
 	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
 	}
