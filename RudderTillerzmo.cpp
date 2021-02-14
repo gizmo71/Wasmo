@@ -1,4 +1,6 @@
-﻿#include <MSFS\MSFS.h>
+﻿#pragma warning(disable: ignored-attributes)
+
+#include <MSFS\MSFS.h>
 #include <MSFS\MSFS_WindowsTypes.h>
 #include <SimConnect.h>
 
