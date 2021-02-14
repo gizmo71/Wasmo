@@ -37,7 +37,7 @@ enum eEvents {
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 
 extern "C" MSFS_CALLBACK void module_init(void) {
-	cout << "RudderTillerzmo: init" << endl;
+	cout << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
 
 	g_hSimConnect = 0;
 	if (FAILED(SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0))) {
