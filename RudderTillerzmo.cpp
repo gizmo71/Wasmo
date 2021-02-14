@@ -160,7 +160,7 @@ void SendDemand() {
 	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
 	// The tiller should change linearly up to 80 knots, when the tiller should have no effect.
 	// The pedals should change linearly up to 40 knots, above which they should have full effect.
-	auto tillerFactor = onGround ? tillerDemand * min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
+	auto tillerFactor = onGround ? min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
 	auto pedalsFactor = onGround && speed > speedEpsilon ?
 		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
 	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
