@@ -1,4 +1,4 @@
-﻿#pragma warning(disable: ignored-attributes)
+﻿#pragma clang diagnostic ignored "-Wignored-attributes"
 
 #include <MSFS\MSFS.h>
 #include <MSFS\MSFS_WindowsTypes.h>
