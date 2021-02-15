@@ -23,8 +23,8 @@ enum DATA_REQUEST_ID {
 };
 
 struct SpoilersData {
-	double spoilersArmed;
-	double spoilerHandle;
+	INT32 spoilersArmed;
+	INT32 spoilerHandle;
 };
 
 enum eEvents {
@@ -67,7 +67,7 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
 		"SPOILERS ARMED",
 		"Bool",
-		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
+		SIMCONNECT_DATATYPE_INT32,
 		0.5);
 	if (FAILED(hr)) {
 		cerr << "Wasmo: couldn't map arming state to spoiler data" << endl;
@@ -75,7 +75,7 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
 		"SPOILERS HANDLE POSITION",
 		"percent",
-		SIMCONNECT_DATATYPE_FLOAT64, // Should be INT32 but that doesn't appear to work properly. :-(
+		SIMCONNECT_DATATYPE_INT32,
 		2.5);
 	if (FAILED(hr)) {
 		cerr << "Wasmo: couldn't map handle position to spoiler data" << endl;
@@ -105,7 +105,6 @@ extern "C" MSFS_CALLBACK void module_deinit(void) {
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "Wasmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
-	HRESULT hr;
 	switch (evt->uEventID) {
 	case EVENT_TEXT:
 		cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
@@ -116,12 +115,10 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 		break;
 	case EVENT_SPOILERS_ARM_TOGGLE:
 		cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
-		hr = SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
-		if (FAILED(hr)) {
+		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
 			cerr << "Wasmo: Could not request spoiler data as the result of an event" << endl;
 		}
-		hr = SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
-		if (FAILED(hr)) {
+		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 			cerr << "Wasmo: Could not refire arm spoiler event" << endl;
 		}
 		break;
