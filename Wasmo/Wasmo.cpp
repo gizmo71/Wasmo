@@ -46,7 +46,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 		return;
 	}
 
-// Does this have to all be done before CallDispatch starts, with no subsequent registrations possible?
 	cout << "Wasmo: map client event" << endl;
 	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 	if (FAILED(hr)) {
@@ -109,10 +108,6 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	case EVENT_TEXT:
 		cout << "Wasmo: Text event " << hex << evt->dwData << dec << endl;
 		break;
-	case EVENT_AIRCRAFT_LOADED:
-		SIMCONNECT_RECV_EVENT_FILENAME* eventFilename = (SIMCONNECT_RECV_EVENT_FILENAME*)evt;
-		cout << "Wasmo: aircraft loaded  " << eventFilename->szFileName << endl;
-		break;
 	case EVENT_SPOILERS_ARM_TOGGLE:
 		cout << "Wasmo: user has asked for less speedbrake (using the arm command)" << endl;
 		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
@@ -127,15 +122,32 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	}
 }
 
+void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
+	switch (eventFilename->uEventID) {
+	case EVENT_AIRCRAFT_LOADED: {
+		cout << "Wasmo: aircraft loaded " << eventFilename->szFileName << endl;
+		bool isA32nx = strstr(eventFilename->szFileName, "Community\\a32nx\\SimObjects\\Airplanes\\Asobo_A320_NEO\\aircraft.CFG");
+		cout << "Wasmo: this is" << (isA32nx ? "" : " not") << " the A32NX by FBW" << endl;
+		break;
+	}
+	default:
+		cerr << "Wasmo: Received unknown event filename " << eventFilename->uEventID << endl;
+	}
+}
+
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 	cout << "Wasmo: dispatch " << pData->dwID << endl;
 	HRESULT hr;
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
-		cout << "Wasmo: OnOpen" << endl;
+		cout << "Wasmo: RX OnOpen" << endl;
+		break;
+	case SIMCONNECT_RECV_ID_EVENT_FILENAME:
+		cout << "Wasmo: RX Filename" << endl;
+		HandleFilename((SIMCONNECT_RECV_EVENT_FILENAME*)pData);
 		break;
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		cerr << "Wasmo: Exception :-(" << endl;
+		cerr << "Wasmo: RX Exception :-(" << endl;
 		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
 		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
 		cerr << "Wasmo: " << exception->dwException << endl;
@@ -143,7 +155,7 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 	}
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
 		SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA*)pData;
-		cout << "Wasmo: received data " << pObjData->dwRequestID << endl;
+		cout << "Wasmo: RX data " << pObjData->dwRequestID << endl;
 		switch (pObjData->dwRequestID) {
 		case REQUEST_SPOILERS: {
 			SpoilersData* pS = (SpoilersData*)&pObjData->dwData;
