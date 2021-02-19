@@ -4,7 +4,9 @@
 #include <MSFS\MSFS_WindowsTypes.h>
 #include <SimConnect.h>
 
+#include <fstream>
 #include <iostream>
+#include <regex>
 
 using namespace std;
 
@@ -123,11 +125,17 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 }
 
 void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
+	// https://github.com/flybywiresim/a32nx/tree/fbw/src/fbw/src/inih
+	// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
+	static const auto aircraftNameRegex = regex(".*\\\\([^\\\\]+)\\\\SimObjects\\\\Airplanes\\\\([^\\\\]+)\\\\aircraft.CFG", regex_constants::icase);
+
 	switch (eventFilename->uEventID) {
 	case EVENT_AIRCRAFT_LOADED: {
 		cout << "Wasmo: aircraft loaded " << eventFilename->szFileName << endl;
-		bool isA32nx = strstr(eventFilename->szFileName, "Community\\a32nx\\SimObjects\\Airplanes\\Asobo_A320_NEO\\aircraft.CFG");
-		cout << "Wasmo: this is" << (isA32nx ? "" : " not") << " the A32NX by FBW" << endl;
+		auto configFile =  regex_replace(eventFilename->szFileName, aircraftNameRegex, "\\work\\$1 $2.ini");
+		ofstream testFile(configFile, ios::app | ios::out); // Fails silently if Bad Things happen.
+		testFile << "; I have become " << configFile << " for " << eventFilename->szFileName << endl;
+		testFile.close();
 		break;
 	}
 	default:
