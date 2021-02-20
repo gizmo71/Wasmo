@@ -3,6 +3,7 @@
 #include <MSFS\MSFS.h>
 #include <MSFS\MSFS_WindowsTypes.h>
 #include <SimConnect.h>
+#include "../inih/cpp/INIReader.h"
 
 #include <fstream>
 #include <iostream>
@@ -125,17 +126,20 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 }
 
 void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
-	// https://github.com/flybywiresim/a32nx/tree/fbw/src/fbw/src/inih
-	// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
 	static const auto aircraftNameRegex = regex(".*\\\\([^\\\\]+)\\\\SimObjects\\\\Airplanes\\\\([^\\\\]+)\\\\aircraft.CFG", regex_constants::icase);
 
 	switch (eventFilename->uEventID) {
 	case EVENT_AIRCRAFT_LOADED: {
 		cout << "Wasmo: aircraft loaded " << eventFilename->szFileName << endl;
 		auto configFile =  regex_replace(eventFilename->szFileName, aircraftNameRegex, "\\work\\$1 $2.ini");
-		ofstream testFile(configFile, ios::app | ios::out); // Fails silently if Bad Things happen.
-		testFile << "; I have become " << configFile << " for " << eventFilename->szFileName << endl;
-		testFile.close();
+		// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
+		INIReader configuration(configFile);
+		if (configuration.ParseError() < 0) {
+			ofstream testFile(configFile, ios::out); // Fails silently if Bad Things happen.
+			testFile << "; I have become " << configFile << " for " << eventFilename->szFileName << endl;
+			testFile.close();
+		}
+		cout << "Wasmo: Wibble.Wobble is " << configuration.GetString("Wibble", "Wobble", "default") << endl;
 		break;
 	}
 	default:
