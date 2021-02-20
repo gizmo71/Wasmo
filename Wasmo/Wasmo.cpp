@@ -135,9 +135,12 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
 		INIReader configuration(configFile);
 		if (configuration.ParseError() < 0) {
+			cout << "Creating new " << configFile << endl;
 			ofstream testFile(configFile, ios::out); // Fails silently if Bad Things happen.
 			testFile << "; I have become " << configFile << " for " << eventFilename->szFileName << endl;
 			testFile.close();
+		} else {
+			cout << "Wasmo: using exising " << configFile << endl;
 		}
 		cout << "Wasmo: Wibble.Wobble is " << configuration.GetString("Wibble", "Wobble", "default") << endl;
 		break;
