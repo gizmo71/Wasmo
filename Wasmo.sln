@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Wasmo", "Wasmo\Wasmo.vcxproj", "{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inih", "inih\inih.vcxproj", "{7EC92233-171F-4CC6-8638-75A469C78D7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|MSFS = Debug|MSFS
@@ -15,6 +17,10 @@ Global
 		{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}.Debug|MSFS.Build.0 = Debug|MSFS
 		{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}.Release|MSFS.ActiveCfg = Release|MSFS
 		{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}.Release|MSFS.Build.0 = Release|MSFS
+		{7EC92233-171F-4CC6-8638-75A469C78D7C}.Debug|MSFS.ActiveCfg = Debug|MSFS
+		{7EC92233-171F-4CC6-8638-75A469C78D7C}.Debug|MSFS.Build.0 = Debug|MSFS
+		{7EC92233-171F-4CC6-8638-75A469C78D7C}.Release|MSFS.ActiveCfg = Release|MSFS
+		{7EC92233-171F-4CC6-8638-75A469C78D7C}.Release|MSFS.Build.0 = Release|MSFS
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

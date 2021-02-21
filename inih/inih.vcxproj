@@ -10,21 +10,29 @@
       <Platform>MSFS</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="submodule\cpp\INIReader.cpp" />
+    <ClCompile Include="submodule\ini.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="submodule\cpp\INIReader.h" />
+    <ClInclude Include="submodule\ini.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{A5468B35-BBBD-4C55-97ED-81BFE343B0E4}</ProjectGuid>
+    <ProjectGuid>{7EC92233-171F-4CC6-8638-75A469C78D7C}</ProjectGuid>
     <RootNamespace>Module</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>MSFS</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>MSFS</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -43,18 +51,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'">
-    <TargetExt>.wasm</TargetExt>
+    <TargetExt>.a</TargetExt>
     <GenerateManifest />
     <LinkIncremental />
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'">
-    <TargetExt>.wasm</TargetExt>
+    <TargetExt>.a</TargetExt>
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'">
     <ClCompile>
@@ -67,7 +75,8 @@
       <ConformanceMode>
       </ConformanceMode>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <AdditionalIncludeDirectories>../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__wasi__;_STRING_H_CPLUSPLUS_98_CONFORMANCE_;_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_;_LIBCPP_HAS_NO_THREADS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ShowIncludes>false</ShowIncludes>
       <ExceptionHandling>false</ExceptionHandling>
@@ -78,13 +87,12 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>
       </BasicRuntimeChecks>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>
       </SubSystem>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
@@ -93,18 +101,25 @@
       </RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>
+      </GenerateDebugInformation>
       <ProgramDatabaseFile>
       </ProgramDatabaseFile>
       <ImportLibrary>
       </ImportLibrary>
       <ProfileGuidedDatabase>
       </ProfileGuidedDatabase>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)\$(Platform)\*.json" "$(OutDir).."</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
+    <Manifest>
+      <AdditionalOptions>
+      </AdditionalOptions>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'">
     <ClCompile>
@@ -114,49 +129,29 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__wasi__;_STRING_H_CPLUSPLUS_98_CONFORMANCE_;_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_;_LIBCPP_HAS_NO_THREADS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <ExceptionHandling>false</ExceptionHandling>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
       <SupportJustMyCode>
       </SupportJustMyCode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PreprocessorDefinitions>__wasi__;_STRING_H_CPLUSPLUS_98_CONFORMANCE_;_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_;_LIBCPP_HAS_NO_THREADS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>
-      </SubSystem>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>
-      </IgnoreAllDefaultLibraries>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <RandomizedBaseAddress>
-      </RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
-      <ProgramDatabaseFile>
-      </ProgramDatabaseFile>
-      <ImportLibrary>
-      </ImportLibrary>
-      <ProfileGuidedDatabase>
-      </ProfileGuidedDatabase>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)\$(Platform)\*.json" "$(OutDir).."</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Wasmo.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\inih\inih.vcxproj">
-      <Project>{7ec92233-171f-4cc6-8638-75a469c78d7c}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

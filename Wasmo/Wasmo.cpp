@@ -2,10 +2,9 @@
 
 #include <MSFS\MSFS.h>
 #include <MSFS\MSFS_WindowsTypes.h>
-#include <stdio.h>
 #include <SimConnect.h>
 
-#include "../inih/cpp/INIReader.h"
+#include <INIReader.h>
 
 #include <fstream>
 #include <iostream>
