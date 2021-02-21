@@ -1,0 +1,15 @@
+{
+  "dependencies": [],
+  "content_type": "MISC",
+  "title": "RudderTillerzmo",
+  "manufacturer": "",
+  "creator”": "DaveGymer.org",
+  "package_version": "0.0.3",
+  "minimum_game_version": "1.11.7",
+  "release_notes": {
+    "neutral": {
+      "LastUpdate": "",
+      "OlderHistory": ""
+    }
+  }
+}
