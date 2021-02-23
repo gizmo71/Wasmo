@@ -1,14 +1,10 @@
 ﻿#pragma clang diagnostic ignored "-Wignored-attributes"
 
-#include <MSFS\MSFS.h>
-#include <MSFS\MSFS_WindowsTypes.h>
-#include <SimConnect.h>
+#include <Wasmo.h>
 
 #include <iostream>
 
 using namespace std;
-
-HANDLE g_hSimConnect;
 
 enum GROUP_ID {
 	GROUP_RUDDER_TILLER = 13,
