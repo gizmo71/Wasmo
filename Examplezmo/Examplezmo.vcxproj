@@ -12,10 +12,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{4804B696-1151-4CF1-8750-033A3FB3C085}</ProjectGuid>
+    <ProjectGuid>{EEF23A4A-1EEF-4D38-BC74-E36E7FA2739F}</ProjectGuid>
     <RootNamespace>Module</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>RudderTillerzmo</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'" Label="Configuration">
@@ -48,14 +47,14 @@
     <GenerateManifest />
     <LinkIncremental />
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
-    <IntDir>$(ProjectDir)\$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\modules\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'">
     <TargetExt>.wasm</TargetExt>
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
-    <IntDir>$(ProjectDir)\$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\modules\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'">
     <ClCompile>
@@ -68,11 +67,10 @@
       <ConformanceMode>
       </ConformanceMode>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <AdditionalIncludeDirectories>../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Wasmo;../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__wasi__;_STRING_H_CPLUSPLUS_98_CONFORMANCE_;_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_;_LIBCPP_HAS_NO_THREADS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ShowIncludes>false</ShowIncludes>
-      <ExceptionHandling>
-      </ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>
       </RuntimeTypeInfo>
       <SupportJustMyCode>
@@ -116,7 +114,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Wasmo;../inih/submodule/cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__wasi__;_STRING_H_CPLUSPLUS_98_CONFORMANCE_;_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_;_LIBCPP_HAS_NO_THREADS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ExceptionHandling>false</ExceptionHandling>
@@ -152,12 +150,16 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="RudderTillerzmo.cpp" />
+    <ClCompile Include="Examplezmo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\inih\inih.vcxproj">
+      <Project>{7ec92233-171f-4cc6-8638-75a469c78d7c}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="layout.json" />
     <None Include="manifest.json" />
-    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

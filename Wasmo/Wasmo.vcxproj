@@ -18,13 +18,13 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>MSFS</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>MSFS</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -43,18 +43,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'">
-    <TargetExt>.wasm</TargetExt>
+    <TargetExt>.a</TargetExt>
     <GenerateManifest />
     <LinkIncremental />
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'">
-    <TargetExt>.wasm</TargetExt>
+    <TargetExt>.a</TargetExt>
     <IncludePath>$(MSFS_IncludePath)</IncludePath>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)-Temp\</IntDir>
-    <OutDir>$(ProjectDir)\$(Platform)\$(Configuration)\modules\</OutDir>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|MSFS'">
     <ClCompile>
@@ -103,7 +103,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)\*.json" "$(OutDir).."</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|MSFS'">
@@ -146,7 +147,8 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)\*.json" "$(OutDir).."</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -158,8 +160,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="layout.json" />
-    <None Include="manifest.json" />
+    <ClInclude Include="Wasmo.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
