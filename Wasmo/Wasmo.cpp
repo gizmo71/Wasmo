@@ -5,3 +5,5 @@
 #include <regex>
 
 using namespace std;
+
+HANDLE g_hSimConnect;

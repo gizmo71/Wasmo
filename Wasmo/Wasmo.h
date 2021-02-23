@@ -7,4 +7,4 @@
 
 #include <INIReader.h>
 
-HANDLE g_hSimConnect;
+extern HANDLE g_hSimConnect;
