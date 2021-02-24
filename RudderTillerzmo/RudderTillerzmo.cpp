@@ -32,21 +32,15 @@ enum eEvents {
 	EVENT_TILLER,
 };
 
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
-
 const double speedEpsilon = 0.1;
 
-extern "C" MSFS_CALLBACK void module_init(void) {
-#if _DEBUG
-	clog << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
-#endif
+struct RudderTillerzmo : Wasmo {
+	void init();
+};
 
-	g_hSimConnect = 0;
-	if (FAILED(SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0))) {
-		cerr << "RudderTillerzmo: Could not open SimConnect connection" << endl;
-		return;
-	}
+Wasmo wasmo = RudderTillerzmo();
 
+void RudderTillerzmo::init() {
 #if _DEBUG
 	cout << "RudderTillerzmo: map client events" << endl;
 #endif
@@ -101,24 +95,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	{
 		cerr << "RudderTillerzmo: Could not request on ground feed" << endl;
 	}
-
-#if _DEBUG
-	cout << "RudderTillerzmo: calling dispatch" << endl;
-#endif
-	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
-		cerr << "RudderTillerzmo: CallDispatch failed" << endl;
-	}
-
-#if _DEBUG
-	cout << "RudderTillerzmo: module initialised" << endl;
-#endif
-}
-
-extern "C" MSFS_CALLBACK void module_deinit(void) {
-	if (g_hSimConnect && FAILED(SimConnect_Close(g_hSimConnect))) {
-		cerr << "RudderTillerzmo: Could not close SimConnect connection" << endl;
-	}
-	g_hSimConnect = 0;
 }
 
 auto pedalsDemand = 0.0;
@@ -193,7 +169,7 @@ void SendDemand() {
 		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
 #endif
 	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
-	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+	if (FAILED(SimConnect_TransmitClientEvent(wasmo.g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
 	}
 }
