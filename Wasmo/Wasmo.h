@@ -7,12 +7,4 @@
 
 #include <INIReader.h>
 
-struct Wasmo {
-	HANDLE g_hSimConnect;
-	virtual void init() { }
-};
-
-// Must be supplied and initialised by consuming application.
-extern Wasmo wasmo;
-
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
+extern HANDLE g_hSimConnect;

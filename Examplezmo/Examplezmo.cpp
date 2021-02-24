@@ -31,44 +31,73 @@ enum eEvents {
 	EVENT_SPOILERS_ARM_TOGGLE,
 };
 
-struct Examplezmo : Wasmo {
-	void init();
-};
-
-Wasmo wasmo = Examplezmo();
+void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 
 // Interesting stuff in https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/interface/SimConnectInterface.cpp
 
-void Examplezmo::init(void) {
+extern "C" MSFS_CALLBACK void module_init(void) {
+	cerr << "Examplezmo: init" << endl;
+	g_hSimConnect = 0;
+	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Wasmo", nullptr, 0, 0, 0);
+	if (FAILED(hr)) {
+		cerr << "Examplezmo: Could not open SimConnect connection" << endl;
+		return;
+	}
+
 	cout << "Examplezmo: map client event" << endl;
-	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE"))) {
+	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
+	if (FAILED(hr)) {
 		cerr << "Examplezmo: couldn't map client event" << endl;
 	}
 	cout << "Examplezmo: OnOpen add to group" << endl;
-	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, TRUE))) {
+	hr = SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_SPOILERS_ARM_TOGGLE, TRUE);
+	if (FAILED(hr)) {
 		cerr << "Examplezmo: couldn't add client event to group" << endl;
 	}
 	cout << "Examplezmo: OnOpen set group priority" << endl;
-	if (FAILED(SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE))) {
+	hr = SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_SPOILERS, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
+	if (FAILED(hr)) {
 		cerr << "Examplezmo: couldn't set notification group priority" << endl;
 	}
 
 	cout << "Examplezmo: add data definition" << endl;
-	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
 		"SPOILERS ARMED",
 		"Bool",
 		SIMCONNECT_DATATYPE_INT32,
-		0.5))) cerr << "Examplezmo: couldn't map arming state to spoiler data" << endl;
-	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
+		0.5);
+	if (FAILED(hr)) {
+		cerr << "Examplezmo: couldn't map arming state to spoiler data" << endl;
+	}
+	hr = SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPOILERS,
 		"SPOILERS HANDLE POSITION",
 		"percent",
 		SIMCONNECT_DATATYPE_INT32,
-		2.5))) cerr << "Examplezmo: couldn't map handle position to spoiler data" << endl;
+		2.5);
+	if (FAILED(hr)) {
+		cerr << "Examplezmo: couldn't map handle position to spoiler data" << endl;
+	}
 
 	cout << "Examplezmo: subscribing to system events" << endl;
 	if (FAILED(SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_AIRCRAFT_LOADED, "AircraftLoaded"))) {
 		cerr << "Examplezmo: couldn't subscribe to AircraftLoaded" << endl;
 	}
+
+	cout << "Examplezmo: calling dispatch" << endl;
+	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
+		cerr << "Examplezmo: CallDispatch failed" << endl;
+	}
+	cout << "Examplezmo: module initialised" << endl;
+}
+
+extern "C" MSFS_CALLBACK void module_deinit(void) {
+	if (!g_hSimConnect)
+		return;
+	HRESULT hr = SimConnect_Close(g_hSimConnect);
+	if (hr != S_OK) {
+		cerr << "Examplezmo: Could not close SimConnect connection" << endl;
+	}
+	g_hSimConnect = 0;
 }
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
@@ -79,10 +108,10 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 		break;
 	case EVENT_SPOILERS_ARM_TOGGLE:
 		cout << "Examplezmo: user has asked for less speedbrake (using the arm command)" << endl;
-		if (FAILED(SimConnect_RequestDataOnSimObject(wasmo.g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
+		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPOILERS, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
 			cerr << "Examplezmo: Could not request spoiler data as the result of an event" << endl;
 		}
-		if (FAILED(SimConnect_TransmitClientEvent(wasmo.g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILERS_ARM_TOGGLE, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
 			cerr << "Examplezmo: Could not refire arm spoiler event" << endl;
 		}
 		break;
