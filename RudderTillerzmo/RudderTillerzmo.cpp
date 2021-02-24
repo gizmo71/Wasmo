@@ -114,13 +114,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 #endif
 }
 
-extern "C" MSFS_CALLBACK void module_deinit(void) {
-	if (g_hSimConnect && FAILED(SimConnect_Close(g_hSimConnect))) {
-		cerr << "RudderTillerzmo: Could not close SimConnect connection" << endl;
-	}
-	g_hSimConnect = 0;
-}
-
 auto pedalsDemand = 0.0;
 auto tillerDemand = 0.0;
 auto speed = 0.0;

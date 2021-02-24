@@ -90,16 +90,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	cout << "Examplezmo: module initialised" << endl;
 }
 
-extern "C" MSFS_CALLBACK void module_deinit(void) {
-	if (!g_hSimConnect)
-		return;
-	HRESULT hr = SimConnect_Close(g_hSimConnect);
-	if (hr != S_OK) {
-		cerr << "Examplezmo: Could not close SimConnect connection" << endl;
-	}
-	g_hSimConnect = 0;
-}
-
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "Examplezmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 	switch (evt->uEventID) {
