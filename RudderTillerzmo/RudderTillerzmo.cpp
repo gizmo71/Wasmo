@@ -32,21 +32,18 @@ enum eEvents {
 	EVENT_TILLER,
 };
 
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
-
 const double speedEpsilon = 0.1;
 
-extern "C" MSFS_CALLBACK void module_init(void) {
-#if _DEBUG
-	clog << boolalpha << nounitbuf << "RudderTillerzmo: init" << endl;
-#endif
+struct RudderTillerzmo : Wasmo {
+	RudderTillerzmo() : Wasmo("RudderTillerzmo") { }
+	void init();
+};
 
-	g_hSimConnect = 0;
-	if (FAILED(SimConnect_Open(&g_hSimConnect, "RudderTillerzmo", nullptr, 0, 0, 0))) {
-		cerr << "RudderTillerzmo: Could not open SimConnect connection" << endl;
-		return;
-	}
+Wasmo* Wasmo::create() {
+	return new RudderTillerzmo();
+}
 
+void RudderTillerzmo::init() {
 #if _DEBUG
 	cout << "RudderTillerzmo: map client events" << endl;
 #endif
@@ -101,17 +98,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	{
 		cerr << "RudderTillerzmo: Could not request on ground feed" << endl;
 	}
-
-#if _DEBUG
-	cout << "RudderTillerzmo: calling dispatch" << endl;
-#endif
-	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
-		cerr << "RudderTillerzmo: CallDispatch failed" << endl;
-	}
-
-#if _DEBUG
-	cout << "RudderTillerzmo: module initialised" << endl;
-#endif
 }
 
 auto pedalsDemand = 0.0;

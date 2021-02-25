@@ -31,21 +31,22 @@ enum eEvents {
 	EVENT_SPOILERS_ARM_TOGGLE,
 };
 
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
-
 // Interesting stuff in https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/interface/SimConnectInterface.cpp
 
-extern "C" MSFS_CALLBACK void module_init(void) {
+struct Examplezmo : Wasmo {
+	Examplezmo() : Wasmo("Examplezmo") { }
+	void init();
+};
+
+Wasmo* Wasmo::create() {
+	return new Examplezmo();
+}
+
+void Examplezmo::init() {
 	cerr << "Examplezmo: init" << endl;
-	g_hSimConnect = 0;
-	HRESULT hr = SimConnect_Open(&g_hSimConnect, "Wasmo", nullptr, 0, 0, 0);
-	if (FAILED(hr)) {
-		cerr << "Examplezmo: Could not open SimConnect connection" << endl;
-		return;
-	}
 
 	cout << "Examplezmo: map client event" << endl;
-	hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
+	HRESULT hr = SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILERS_ARM_TOGGLE, "SPOILERS_ARM_TOGGLE");
 	if (FAILED(hr)) {
 		cerr << "Examplezmo: couldn't map client event" << endl;
 	}
@@ -82,12 +83,6 @@ extern "C" MSFS_CALLBACK void module_init(void) {
 	if (FAILED(SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_AIRCRAFT_LOADED, "AircraftLoaded"))) {
 		cerr << "Examplezmo: couldn't subscribe to AircraftLoaded" << endl;
 	}
-
-	cout << "Examplezmo: calling dispatch" << endl;
-	if (FAILED(SimConnect_CallDispatch(g_hSimConnect, WasmoDispatch, nullptr))) {
-		cerr << "Examplezmo: CallDispatch failed" << endl;
-	}
-	cout << "Examplezmo: module initialised" << endl;
 }
 
 void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
