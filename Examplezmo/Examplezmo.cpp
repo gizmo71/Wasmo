@@ -107,23 +107,29 @@ void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
 
 void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 	static const auto aircraftNameRegex = regex(".*\\\\([^\\\\]+)\\\\SimObjects\\\\Airplanes\\\\([^\\\\]+)\\\\aircraft.CFG", regex_constants::icase);
+	static const auto configFile = "\\work\\aircraft-config.ini";
 
 	switch (eventFilename->uEventID) {
 	case EVENT_AIRCRAFT_LOADED: {
 		cout << "Examplezmo: aircraft loaded " << eventFilename->szFileName << endl;
-		auto configFile = regex_replace(eventFilename->szFileName, aircraftNameRegex, "\\work\\$1 $2.ini");
+		auto configName = regex_replace(eventFilename->szFileName, aircraftNameRegex, "$1 $2");
 		// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
 		INIReader configuration(configFile);
+		ofstream testFile(configFile, ios::out | ios::app); // Fails silently if Bad Things happen.
 		if (configuration.ParseError() < 0) {
-			cout << "Creating new " << configFile << endl;
-			ofstream testFile(configFile, ios::out); // Fails silently if Bad Things happen.
-			testFile << "; I have become " << configFile << " for " << eventFilename->szFileName << endl;
-			testFile.close();
-		}
-		else {
+			cout << "Examplezmo: Creating completely new " << configFile << endl;
+			testFile << "; Created " << configFile << " whilst loading " << eventFilename->szFileName << endl;
+		} else {
 			cout << "Examplezmo: using exising " << configFile << endl;
 		}
-		cout << "Examplezmo: Wibble.Wobble is " << configuration.GetString("Wibble", "Wobble", "default") << endl;
+		if (!configuration.HasSection(configName)) {
+			cout << "Examplezmo: adding section for " << configName << endl;
+			testFile << endl << '[' << configName << ']' << endl << ";config=not_the_default" << endl;
+		} else {
+			cout << "Examplezmo: using exising " << configFile << endl;
+		}
+		testFile.close();
+		cout << "Examplezmo: aircraft-specific config is " << configuration.GetString(configName, "config", "default") << endl;
 		break;
 	}
 	default:
