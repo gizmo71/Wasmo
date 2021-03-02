@@ -118,18 +118,19 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		ofstream testFile(configFile, ios::out | ios::app); // Fails silently if Bad Things happen.
 		if (configuration.ParseError() < 0) {
 			cout << "Examplezmo: Creating completely new " << configFile << endl;
-			testFile << "; Created " << configFile << " whilst loading " << eventFilename->szFileName << endl;
+			testFile << "[default]" << endl << "config=file_default" << endl;
 		} else {
-			cout << "Examplezmo: using exising " << configFile << endl;
+			cout << "Examplezmo: using existing " << configFile << endl;
 		}
-		if (!configuration.HasSection(configName)) {
+		if (!configuration.HasSection(configName)) { // HasSection only works if there is at least one value.
 			cout << "Examplezmo: adding section for " << configName << endl;
-			testFile << endl << '[' << configName << ']' << endl << ";config=not_the_default" << endl;
+			testFile << endl << '[' << configName << ']' << endl << "alias=default" << endl;
 		} else {
-			cout << "Examplezmo: using exising " << configFile << endl;
+			cout << "Examplezmo: using existing entry from " << configFile << endl;
 		}
 		testFile.close();
-		cout << "Examplezmo: aircraft-specific config is " << configuration.GetString(configName, "config", "default") << endl;
+		configName = configuration.GetString(configName, "alias", configName);
+		cout << "Examplezmo: aircraft-specific config is " << configuration.GetString(configName, "config", "default_default") << endl;
 		break;
 	}
 	default:
