@@ -9,10 +9,11 @@
 
 struct Wasmo {
 	Wasmo(const char* appName);
+	virtual ~Wasmo() { }
 	static Wasmo* create();
 	virtual void init() = 0;
+	virtual void Handle(SIMCONNECT_RECV_EVENT*) = 0;
+	virtual void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*) = 0;
 };
-
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV*, DWORD, void*);
 
 extern HANDLE g_hSimConnect;

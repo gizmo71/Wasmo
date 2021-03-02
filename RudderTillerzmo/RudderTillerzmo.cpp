@@ -10,6 +10,11 @@ enum GROUP_ID {
 	GROUP_RUDDER_TILLER = 13,
 };
 
+enum EVENT_ID {
+	EVENT_RUDDER = 7,
+	EVENT_TILLER,
+};
+
 enum DATA_DEFINE_ID {
 	DEFINITION_SPEED = 69,
 	DEFINITION_ON_GROUND,
@@ -27,16 +32,13 @@ struct GroundData {
 	int32_t isOnGround;
 };
 
-enum eEvents {
-	EVENT_RUDDER,
-	EVENT_TILLER,
-};
-
 const double speedEpsilon = 0.1;
 
 struct RudderTillerzmo : Wasmo {
 	RudderTillerzmo() : Wasmo("RudderTillerzmo") { }
 	void init();
+	void Handle(SIMCONNECT_RECV_EVENT*);
+	void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*);
 };
 
 Wasmo* Wasmo::create() {
@@ -107,52 +109,6 @@ bool onGround = FALSE;
 
 const auto maxRawMagnitude = 16384.0;
 
-void HandleEvent(SIMCONNECT_RECV_EVENT* evt) {
-#if _DEBUG
-	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
-#endif
-	switch (evt->uEventID) {
-	case EVENT_RUDDER:
-		pedalsDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
-#if _DEBUG
-		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
-#endif
-		break;
-	case EVENT_TILLER:
-		tillerDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
-#if _DEBUG
-		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
-#endif
-		break;
-	default:
-		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
-	}
-}
-
-void HandleData(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
-#if _DEBUG
-	cout << "RudderTillerzmo: received data " << pObjData->dwRequestID << endl;
-#endif
-	switch (pObjData->dwRequestID) {
-	case REQUEST_SPEED: {
-		speed = ((SpeedData*)(&pObjData->dwData))->groundSpeed;
-#if _DEBUG
-		cout << "RudderTillerzmo: updated speed to " << speed << endl;
-#endif
-		break;
-	}
-	case REQUEST_ON_GROUND: {
-		onGround = ((GroundData*)(&pObjData->dwData))->isOnGround;
-#if _DEBUG
-		cout << "RudderTillerzmo: updated on ground to " << onGround << endl;
-#endif
-		break;
-	}
-	default:
-		cerr << "RudderTillerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
-	}
-}
-
 void SendDemand() {
 #if _DEBUG
 	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
@@ -177,37 +133,52 @@ void SendDemand() {
 	}
 }
 
-void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
+void RudderTillerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 #if _DEBUG
-	cout << "RudderTillerzmo: dispatch " << pData->dwID << endl;
+	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 #endif
-	switch (pData->dwID) {
-	case SIMCONNECT_RECV_ID_OPEN:
+	switch (evt->uEventID) {
+	case EVENT_RUDDER:
+		pedalsDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
 #if _DEBUG
-		cout << "RudderTillerzmo: OnOpen" << endl;
+		cout << "RudderTillerzmo: user has asked to set rudder to " << pedalsDemand << endl;
 #endif
 		break;
-	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		cerr << "RudderTillerzmo: Exception :-(" << endl;
-		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
-		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
-		cerr << "RudderTillerzmo: " << exception->dwException << endl;
-		break;
-	}
-	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
-		HandleData((SIMCONNECT_RECV_SIMOBJECT_DATA*)pData);
-		SendDemand();
-		break;
-	}
-	case SIMCONNECT_RECV_ID_EVENT:
-		HandleEvent((SIMCONNECT_RECV_EVENT*)pData);
-		SendDemand();
+	case EVENT_TILLER:
+		tillerDemand = static_cast<long>(evt->dwData) / maxRawMagnitude;
+#if _DEBUG
+		cout << "RudderTillerzmo: user has asked to set tiller to " << tillerDemand << endl;
+#endif
 		break;
 	default:
-		cerr << "RudderTillerzmo: Received unknown dispatch ID " << pData->dwID << endl;
+		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
+		return;
+	}
+	SendDemand();
+}
+
+void RudderTillerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
+#if _DEBUG
+	cout << "RudderTillerzmo: received data " << pObjData->dwRequestID << endl;
+#endif
+	switch (pObjData->dwRequestID) {
+	case REQUEST_SPEED: {
+		speed = ((SpeedData*)(&pObjData->dwData))->groundSpeed;
+#if _DEBUG
+		cout << "RudderTillerzmo: updated speed to " << speed << endl;
+#endif
 		break;
 	}
+	case REQUEST_ON_GROUND: {
+		onGround = ((GroundData*)(&pObjData->dwData))->isOnGround;
 #if _DEBUG
-	cout << "RudderTillerzmo: done responding" << endl;
+		cout << "RudderTillerzmo: updated on ground to " << onGround << endl;
 #endif
+		break;
+	}
+	default:
+		cerr << "RudderTillerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+		return;
+	}
+	SendDemand();
 }
