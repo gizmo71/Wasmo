@@ -47,4 +47,6 @@ extern "C" MSFS_CALLBACK void module_deinit(void) {
 		cerr << "Wasmo: Could not close SimConnect connection" << endl;
 	}
 	g_hSimConnect = 0;
+	delete wasmo;
+	wasmo = nullptr;
 }
