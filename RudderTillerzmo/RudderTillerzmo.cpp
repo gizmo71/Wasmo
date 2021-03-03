@@ -39,6 +39,14 @@ struct RudderTillerzmo : Wasmo {
 	void init();
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*);
+
+	void SendDemand();
+
+private:
+	double pedalsDemand = 0.0;
+	double tillerDemand = 0.0;
+	double speed = 0.0;
+	bool onGround = FALSE;
 };
 
 Wasmo* Wasmo::create() {
@@ -102,36 +110,7 @@ void RudderTillerzmo::init() {
 	}
 }
 
-auto pedalsDemand = 0.0;
-auto tillerDemand = 0.0;
-auto speed = 0.0;
-bool onGround = FALSE;
-
 const auto maxRawMagnitude = 16384.0;
-
-void SendDemand() {
-#if _DEBUG
-	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
-		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
-#endif
-	// See also https://github.com/flybywiresim/a32nx/pull/769
-	// When stopped, allow full pedal control (for control check).
-	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
-	// The tiller should change linearly up to 80 knots, when the tiller should have no effect.
-	// The pedals should change linearly up to 40 knots, above which they should have full effect.
-	auto tillerFactor = onGround ? min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
-	auto pedalsFactor = onGround && speed > speedEpsilon ?
-		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
-	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
-#if _DEBUG
-	cout << "RudderTillerzmo: modulated demand " << modulatedDemand
-		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
-#endif
-	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
-	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
-	}
-}
 
 void RudderTillerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 #if _DEBUG
@@ -181,4 +160,28 @@ void RudderTillerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		return;
 	}
 	SendDemand();
+}
+
+void RudderTillerzmo::SendDemand() {
+#if _DEBUG
+	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
+		<< " at " << speed << "kts " << (onGround ? "on ground" : "in air") << endl;
+#endif
+	// See also https://github.com/flybywiresim/a32nx/pull/769
+	// When stopped, allow full pedal control (for control check).
+	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
+	// The tiller should change linearly up to 80 knots, when the tiller should have no effect.
+	// The pedals should change linearly up to 40 knots, above which they should have full effect.
+	auto tillerFactor = onGround ? min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
+	auto pedalsFactor = onGround && speed > speedEpsilon ?
+		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
+	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
+#if _DEBUG
+	cout << "RudderTillerzmo: modulated demand " << modulatedDemand
+		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
+#endif
+	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
+	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
+	}
 }
