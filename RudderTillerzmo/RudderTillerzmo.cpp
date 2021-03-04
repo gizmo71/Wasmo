@@ -1,6 +1,4 @@
-﻿#pragma clang diagnostic ignored "-Wignored-attributes"
-
-#include <Wasmo.h>
+﻿#include <Wasmo.h>
 
 #include <iostream>
 
