@@ -80,50 +80,66 @@ void Spoilerzmo::init() {
 
 void Spoilerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "Spoilerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
+
+	SIMCONNECT_DATA_REQUEST_ID request = -1;
+
 	switch (evt->uEventID) {
 	case EVENT_LESS_SPOILER_ARM_GROUND:
 		cout << "Spoilerzmo: user has asked for less speedbrake (using the arm command)" << endl;
-		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_LESS_SPOILER, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
-			cerr << "Spoilerzmo: Could not request spoiler data as the result of an event" << endl;
-		}
+		request = REQUEST_LESS_SPOILER;
 		break;
 	case EVENT_MORE_SPOILER_TOGGLE:
 		cout << "Spoilerzmo: user has asked for more speedbrake (using the toggle command)" << endl;
-		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_MORE_SPOILER, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
-			cerr << "Spoilerzmo: Could not request spoiler data as the result of an event" << endl;
-		}
+		request = REQUEST_MORE_SPOILER;
 		break;
 	default:
 		cerr << "Spoilerzmo: Received unknown event " << evt->uEventID << endl;
+	}
+
+	if (request != -1) {
+		cout << "Spoilerzmo: requesting " << request << endl;
+		if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, request, DEFINITION_SPOILERS, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0))) {
+			cerr << "Spoilerzmo: Could not request spoiler data as the result of an event" << endl;
+		}
+	} else {
+		cout << "Spoilerzmo: no request to send" << endl;
 	}
 }
 
 void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	cout << "Spoilerzmo: RX data " << pObjData->dwRequestID << endl;
+
 	SpoilersData* spoilersData = (SpoilersData*)&pObjData->dwData;
 	INT32 handleData = -1;
+	SIMCONNECT_CLIENT_EVENT_ID toSend = -1;
+
 	switch (pObjData->dwRequestID) {
 	case REQUEST_LESS_SPOILER:
 		if (spoilersData->spoilerHandle > 0) {
 			handleData = max(spoilersData->spoilerHandle - 25, 0);
 		} else if (spoilersData->spoilersArmed == 0) {
-			if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_LESS_SPOILER_ARM_GROUND, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-				cerr << "Spoilerzmo: Could not refire arm spoiler event" << endl;
-			}
+			toSend = EVENT_LESS_SPOILER_ARM_GROUND;
 		}
 		break;
 	case REQUEST_MORE_SPOILER:
 		if (spoilersData->spoilersArmed != 0) {
-			if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_LESS_SPOILER_ARM_GROUND, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-				cerr << "Spoilerzmo: Could not refire arm spoiler event" << endl;
-			}
+			toSend = EVENT_LESS_SPOILER_ARM_GROUND;
 			handleData = 0;
-		} else if (spoilersData->spoilerHandle <= 100) {
+		} else if (spoilersData->spoilerHandle < 100) {
 			handleData = min(spoilersData->spoilerHandle + 25, 100);
 		}
 		break;
 	default:
 		cerr << "Spoilerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+	}
+
+	if (toSend != -1) {
+		cout << "Spoilerzmo: sending " << toSend << endl;
+		if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, toSend, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
+			cerr << "Spoilerzmo: Could not refire arm spoiler event" << endl;
+		}
+	} else {
+		cout << "Spoilerzmo: no event to send" << endl;
 	}
 
 	if (handleData != -1) {
