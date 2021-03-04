@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RudderTillerzmo", "RudderTi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Examplezmo", "Examplezmo\Examplezmo.vcxproj", "{EEF23A4A-1EEF-4D38-BC74-E36E7FA2739F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Spoilerzmo", "Spoilerzmo\Spoilerzmo.vcxproj", "{BA520298-2637-4408-8B80-5897BDA66007}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|MSFS = Debug|MSFS
@@ -33,6 +35,10 @@ Global
 		{EEF23A4A-1EEF-4D38-BC74-E36E7FA2739F}.Debug|MSFS.Build.0 = Debug|MSFS
 		{EEF23A4A-1EEF-4D38-BC74-E36E7FA2739F}.Release|MSFS.ActiveCfg = Release|MSFS
 		{EEF23A4A-1EEF-4D38-BC74-E36E7FA2739F}.Release|MSFS.Build.0 = Release|MSFS
+		{BA520298-2637-4408-8B80-5897BDA66007}.Debug|MSFS.ActiveCfg = Debug|MSFS
+		{BA520298-2637-4408-8B80-5897BDA66007}.Debug|MSFS.Build.0 = Debug|MSFS
+		{BA520298-2637-4408-8B80-5897BDA66007}.Release|MSFS.ActiveCfg = Release|MSFS
+		{BA520298-2637-4408-8B80-5897BDA66007}.Release|MSFS.Build.0 = Release|MSFS
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
