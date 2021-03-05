@@ -14,6 +14,7 @@ struct Wasmo {
 	virtual void init() = 0;
 	virtual void Handle(SIMCONNECT_RECV_EVENT*) = 0;
 	virtual void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*) = 0;
+	virtual void AircraftLoaded(INIReader&, std::string section) { }
 };
 
 extern HANDLE g_hSimConnect;

@@ -42,6 +42,7 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		testFile.close();
 		configName = configuration.GetString(configName, "alias", configName);
 		cout << "Wasmo: aircraft-specific config is " << configuration.GetString(configName, "config", "default_default") << endl;
+		wasmo->AircraftLoaded(configuration, configName);
 		break;
 	}
 	default:
