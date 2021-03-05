@@ -30,17 +30,20 @@ struct GroundData {
 	int32_t isOnGround;
 };
 
-const double speedEpsilon = 0.1;
-
 struct RudderTillerzmo : Wasmo {
 	RudderTillerzmo() : Wasmo("RudderTillerzmo") { }
 	void init();
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*);
+	void AircraftLoaded(INIReader&, std::string);
 
 	void SendDemand();
 
 private:
+	const double speedEpsilon = 1.0 / 3.0;
+	const double maxRawMagnitude = 16384.0;
+
+	bool isTillerMerged = false;
 	double pedalsDemand = 0.0;
 	double tillerDemand = 0.0;
 	double speed = 0.0;
@@ -108,8 +111,6 @@ void RudderTillerzmo::init() {
 	}
 }
 
-const auto maxRawMagnitude = 16384.0;
-
 void RudderTillerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 #if _DEBUG
 	cout << "RudderTillerzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
@@ -160,6 +161,10 @@ void RudderTillerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	SendDemand();
 }
 
+void RudderTillerzmo::AircraftLoaded(INIReader& config, std::string section) {
+	isTillerMerged = config.GetBoolean(section, "MergeTiller", FALSE);
+}
+
 void RudderTillerzmo::SendDemand() {
 #if _DEBUG
 	cout << "RudderTillerzmo: " << pedalsDemand << " plus " << tillerDemand
@@ -170,8 +175,9 @@ void RudderTillerzmo::SendDemand() {
 	// Up to 20 knots, tiller should get full control, pedals only 6/75ths.
 	// The tiller should change linearly up to 80 knots, when the tiller should have no effect.
 	// The pedals should change linearly up to 40 knots, above which they should have full effect.
-	auto tillerFactor = onGround ? min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
-	auto pedalsFactor = onGround && speed > speedEpsilon ?
+	auto tillerFactor = isTillerMerged && onGround ?
+		min(1.0, max(0.0, (80.0 - speed) / 60.0)) : 0.0;
+	auto pedalsFactor = isTillerMerged && onGround && speed > speedEpsilon ?
 		min(1.0, max(0.08, 1.0 - 0.92 * ((40.0 - speed) / 20.0))) : 1.0;
 	auto modulatedDemand = max(min(pedalsDemand * pedalsFactor + tillerDemand * tillerFactor, 1.0), -1.0);
 #if _DEBUG
