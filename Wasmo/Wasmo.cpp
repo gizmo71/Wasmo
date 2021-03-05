@@ -20,7 +20,9 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 
 	switch (eventFilename->uEventID) {
 	case EVENT_AIRCRAFT_LOADED: {
+#if _DEBUG
 		cout << "Wasmo: aircraft loaded " << eventFilename->szFileName << endl;
+#endif
 		auto configName = regex_replace(eventFilename->szFileName, aircraftNameRegex, "$1 $2");
 		// https://github.com/flybywiresim/a32nx/blob/fbw/src/fbw/src/FlightDataRecorder.cpp
 		INIReader configuration(configFile);
@@ -28,16 +30,18 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		if (configuration.ParseError() < 0) {
 			cout << "Wasmo: Creating completely new " << configFile << endl;
 			testFile << "[default]" << endl << "config=file_default" << endl;
-		}
-		else {
+#if _DEBUG
+		} else {
 			cout << "Wasmo: using existing " << configFile << endl;
+#endif
 		}
 		if (!configuration.HasSection(configName)) { // HasSection only works if there is at least one value.
 			cout << "Wasmo: adding section for " << configName << endl;
 			testFile << endl << '[' << configName << ']' << endl << "alias=default" << endl;
-		}
-		else {
+#if _DEBUG
+		} else {
 			cout << "Wasmo: using existing entry from " << configFile << endl;
+#endif
 		}
 		testFile.close();
 		configName = configuration.GetString(configName, "alias", configName);
@@ -51,7 +55,9 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 }
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
+#if _DEBUG
 	cout << "Examplezmo: dispatch " << pData->dwID << endl;
+#endif
 	HRESULT hr;
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_OPEN:
@@ -62,10 +68,9 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		HandleFilename((SIMCONNECT_RECV_EVENT_FILENAME*)pData);
 		break;
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		cerr << "Wasmo: RX Exception :-(" << endl;
 		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
 		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
-		cerr << "Wasmo: " << exception->dwException << endl;
+		cerr << "Wasmo: RX Exception :-( " << exception->dwException << endl;
 		break;
 	}
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
@@ -78,7 +83,9 @@ void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext
 		cerr << "Wasmo: Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
+#if _DEBUG
 	cout << "Wasmo: done responding, will it call again?" << endl;
+#endif
 }
 
 extern "C" MSFS_CALLBACK void module_init(void) {
