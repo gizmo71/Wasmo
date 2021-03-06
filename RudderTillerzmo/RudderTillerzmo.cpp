@@ -1,5 +1,6 @@
 ﻿#include <Wasmo.h>
 
+#include <fstream>
 #include <iostream>
 
 using namespace std;
@@ -35,6 +36,7 @@ struct RudderTillerzmo : Wasmo {
 	void init();
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*);
+	void WriteDefaultSection(std::ofstream& out);
 	void AircraftLoaded(INIReader&, std::string);
 
 	void SendDemand();
@@ -159,6 +161,10 @@ void RudderTillerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		return;
 	}
 	SendDemand();
+}
+
+void RudderTillerzmo::WriteDefaultSection(ofstream& out) {
+	out << "MergeTiller=false" << endl;
 }
 
 void RudderTillerzmo::AircraftLoaded(INIReader& config, std::string section) {

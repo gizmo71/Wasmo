@@ -14,6 +14,10 @@ HANDLE g_hSimConnect;
 
 Wasmo* wasmo;
 
+void Wasmo::WriteDefaultSection(ofstream& out) {
+	out << "config=file_default" << endl;
+}
+
 void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 	static const auto aircraftNameRegex = regex(".*\\\\([^\\\\]+)\\\\SimObjects\\\\Airplanes\\\\([^\\\\]+)\\\\aircraft.CFG", regex_constants::icase);
 	static const auto configFile = "\\work\\aircraft-config.ini";
@@ -29,7 +33,8 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		ofstream testFile(configFile, ios::out | ios::app); // Fails silently if Bad Things happen.
 		if (configuration.ParseError() < 0) {
 			cout << "Wasmo: Creating completely new " << configFile << endl;
-			testFile << "[default]" << endl << "config=file_default" << endl;
+			testFile << "[default]" << endl;
+			wasmo->WriteDefaultSection(testFile);
 #if _DEBUG
 		} else {
 			cout << "Wasmo: using existing " << configFile << endl;
