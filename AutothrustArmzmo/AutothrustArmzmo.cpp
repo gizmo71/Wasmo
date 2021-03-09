@@ -61,7 +61,7 @@ void AutothrustArmzmo::init() {
 #endif
 
 void AutothrustArmzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
-#if LVAR_EXPERIMENT
+#if LVAR_EXPERIMENT // Both work! :-D
 	ID idA320 = check_named_variable("A320_Neo_MFD_NAV_MODE_1");
 	set_named_variable_value(idA320, 4); // 4 is "plan" - other modes are 0-3
 
@@ -76,14 +76,12 @@ void AutothrustArmzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 	cout << "AutothrustArmzmo: Received event " << evt->uEventID << " in group " << evt->uGroupID << endl;
 #endif
 
-	SIMCONNECT_DATA_REQUEST_ID request = -1;
-
 	switch (evt->uEventID) {
 	case EVENT_N1_HOLD:
 #if _DEBUG
 		cout << "AutothrustArmzmo: user has demanded autothrust is armed or engaged; requesting data" << endl;
 #endif
-		SimConnect_RequestDataOnSimObject(g_hSimConnect, request, DEFINITION_AUTOTHRUST,
+		SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_AUTOTHRUST, DEFINITION_AUTOTHRUST,
 			SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
 		break;
 	default:
