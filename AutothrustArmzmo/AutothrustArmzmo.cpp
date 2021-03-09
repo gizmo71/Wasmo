@@ -55,7 +55,7 @@ void AutothrustArmzmo::init() {
 		"AUTOPILOT THROTTLE ARM", "Bool", SIMCONNECT_DATATYPE_INT32, 0.5);
 }
 
-#define LVAR_EXPERIMENT 1 // https://forums.flightsimulator.com/t/demo-lvar-write-access-for-any-aircraft-control/353443
+#define LVAR_EXPERIMENT 0 // https://forums.flightsimulator.com/t/demo-lvar-write-access-for-any-aircraft-control/353443
 #if LVAR_EXPERIMENT
 #include <MSFS/Legacy/gauges.h>
 #endif
@@ -63,6 +63,7 @@ void AutothrustArmzmo::init() {
 void AutothrustArmzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 #if LVAR_EXPERIMENT // Both work! :-D
 	ID idA320 = check_named_variable("A320_Neo_MFD_NAV_MODE_1");
+	double previousValue = get_named_variable_value(idA320);
 	set_named_variable_value(idA320, 4); // 4 is "plan" - other modes are 0-3
 
 	// Press MCDU button DIR
@@ -70,6 +71,8 @@ void AutothrustArmzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 	SINT32* b = nullptr;
 	PCSTRINGZ* c = nullptr;
 	execute_calculator_code("(>H:A320_Neo_CDU_1_BTN_DIR)", a, b, c);
+
+	// https://forums.flightsimulator.com/t/demo-lvar-write-access-for-any-aircraft-control/353443/35?u=dgymer
 #endif
 
 #if _DEBUG
