@@ -21,8 +21,8 @@ enum DATA_REQUEST_ID {
 };
 struct HeadingData {
 	int32_t pushbackState;
-	double trueHeading;
-	double rudderPedalPosition;
+	float trueHeading;
+	float rudderPedalPosition;
 };
 struct StateData {
 	int32_t pushbackState;
@@ -32,6 +32,10 @@ struct PushbackRudderzmo : Wasmo {
 	PushbackRudderzmo() : Wasmo("PushbackRudderzmo") { }
 	void init();
 	void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*);
+private:
+	const double fullCircleDegrees = 360.0;
+	const double maxSteerOffsetDegrees = 50.0;
+	const double dwordPerDegree = DWORD_MAX / fullCircleDegrees; // ~11930465
 };
 
 Wasmo* Wasmo::create() {
@@ -55,9 +59,9 @@ void PushbackRudderzmo::init() {
 	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_HEADING,
 		"PUSHBACK STATE", "enum", SIMCONNECT_DATATYPE_INT32, 0.5f);
 	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_HEADING,
-		"PLANE HEADING DEGREES TRUE", "Degrees", SIMCONNECT_DATATYPE_FLOAT64, 0.5f);
+		"PLANE HEADING DEGREES TRUE", "Degrees", SIMCONNECT_DATATYPE_FLOAT32, 0.5f);
 	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_HEADING,
-		"RUDDER PEDAL POSITION", "Position", SIMCONNECT_DATATYPE_FLOAT64, 0.02f);
+		"RUDDER PEDAL POSITION", "Position", SIMCONNECT_DATATYPE_FLOAT32, 0.02f);
 
 #if _DEBUG
 	cout << "PushbackRudderzmo: requesting data feeds" << endl;
@@ -96,8 +100,8 @@ void PushbackRudderzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 			<< data->trueHeading << ", rudder pedals to " << data->rudderPedalPosition << endl;
 #endif
 		if (data->pushbackState == 0) {
-			auto degrees = fmod(data->trueHeading + 360.0 - data->rudderPedalPosition * 50.0, 360.0);
-			auto eventData = (DWORD)(degrees * 11930465) & 0xffffffff;
+			auto degrees = fmod(data->trueHeading + fullCircleDegrees - data->rudderPedalPosition * maxSteerOffsetDegrees, fullCircleDegrees);
+			auto eventData = static_cast<DWORD>(degrees * dwordPerDegree);
 #if _DEBUG
 			cout << "PushbackRudderzmo: sending new tug heading " << degrees << " as " << eventData << endl;
 #endif
