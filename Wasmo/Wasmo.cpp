@@ -61,7 +61,7 @@ void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 
 void CALLBACK WasmoDispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 #if _DEBUG
-	cout << "Examplezmo: dispatch " << pData->dwID << endl;
+	cout << "Wasmo: dispatch " << pData->dwID << endl;
 #endif
 	HRESULT hr;
 	switch (pData->dwID) {
