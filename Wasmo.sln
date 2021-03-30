@@ -13,7 +13,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Spoilerzmo", "Spoilerzmo\Sp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AutothrustArmzmo", "AutothrustArmzmo\AutothrustArmzmo.vcxproj", "{47B6A07E-4AA9-468D-9123-C336926E0BDA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RudderTillerzmo", "PushbackRudderzmo\PushbackRudderzmo.vcxproj", "{58DFB146-B0C2-4362-A28B-59FCCEF13E27}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PushbackRudderzmo", "PushbackRudderzmo\PushbackRudderzmo.vcxproj", "{58DFB146-B0C2-4362-A28B-59FCCEF13E27}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Controlzmo", "Controlzmo\Controlzmo.vcxproj", "{5DCB1A34-6397-48FF-AB04-A4E0EF6A56E9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{58DFB146-B0C2-4362-A28B-59FCCEF13E27}.Debug|MSFS.Build.0 = Debug|MSFS
 		{58DFB146-B0C2-4362-A28B-59FCCEF13E27}.Release|MSFS.ActiveCfg = Release|MSFS
 		{58DFB146-B0C2-4362-A28B-59FCCEF13E27}.Release|MSFS.Build.0 = Release|MSFS
+		{5DCB1A34-6397-48FF-AB04-A4E0EF6A56E9}.Debug|MSFS.ActiveCfg = Debug|MSFS
+		{5DCB1A34-6397-48FF-AB04-A4E0EF6A56E9}.Debug|MSFS.Build.0 = Debug|MSFS
+		{5DCB1A34-6397-48FF-AB04-A4E0EF6A56E9}.Release|MSFS.ActiveCfg = Release|MSFS
+		{5DCB1A34-6397-48FF-AB04-A4E0EF6A56E9}.Release|MSFS.Build.0 = Release|MSFS
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
