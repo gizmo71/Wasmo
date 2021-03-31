@@ -76,7 +76,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 			get_named_variable_value(v1Id), get_named_variable_value(vrId),
 			get_named_variable_value(phaseId) };
 #if _DEBUG
-		cout << "Controlzmo: VSpeed calls data RX " << clientData.airSpeed << " V1 " << clientData.v1 << " VR " << clientData.vr << " phase " << clientData.phase << endl;
+		cout << "Controlzmo: VSpeed calls data RX " << clientData.airSpeed << " V1 " << clientData.v1 << " VR " << clientData.vr << " phase " << (int)clientData.phase << endl;
 #endif
 		if (clientData.v1 != -1 || clientData.vr != -1)
 			SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, CLIENT_DATA_DEFINITION_VSPEED_CALLS,
