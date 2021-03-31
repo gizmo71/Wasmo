@@ -30,6 +30,7 @@ struct VSpeedCallsClientData {
 	double airSpeed;
 	double v1;
 	double vr;
+	byte phase;
 };
 
 struct Controlzmo : Wasmo {
@@ -53,6 +54,7 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_FLOAT64);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_FLOAT64);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_FLOAT64);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 
 	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_VSPEED_CALLS,
 		"AIRSPEED INDICATED", "Knots", SIMCONNECT_DATATYPE_FLOAT64, 1.0f);
@@ -69,13 +71,16 @@ void Controlzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		VSpeedCallsData* data = (VSpeedCallsData*)(&pObjData->dwData);
 		ID v1Id = check_named_variable("AIRLINER_V1_SPEED");
 		ID vrId = check_named_variable("AIRLINER_VR_SPEED");
+		ID phaseId = check_named_variable("A32NX_FMGC_FLIGHT_PHASE");
 		VSpeedCallsClientData clientData { data->airSpeed,
-			get_named_variable_value(v1Id), get_named_variable_value(vrId) };
+			get_named_variable_value(v1Id), get_named_variable_value(vrId),
+			get_named_variable_value(phaseId) };
 #if _DEBUG
-		cout << "Controlzmo: VSpeed calls data RX " << clientData.airSpeed << " V1 " << clientData.v1 << " VR " << clientData.vr << endl;
+		cout << "Controlzmo: VSpeed calls data RX " << clientData.airSpeed << " V1 " << clientData.v1 << " VR " << clientData.vr << " phase " << clientData.phase << endl;
 #endif
-		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, CLIENT_DATA_DEFINITION_VSPEED_CALLS,
-			SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(clientData), &clientData);
+		if (clientData.v1 != -1 || clientData.vr != -1)
+			SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, CLIENT_DATA_DEFINITION_VSPEED_CALLS,
+				SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(clientData), &clientData);
 		break;
 	}
 	default:
