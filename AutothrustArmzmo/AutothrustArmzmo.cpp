@@ -1,4 +1,6 @@
-﻿#include <Wasmo.h>
+﻿//TODO: If AUTOPILOT_ON is sent and L:A32NX_AUTOPILOT_ACTIVE is 0, send K:A32NX.FCU_AP_1_PUSH (client event) or H:A320_Neo_FCU_AP_1_PUSH (from in-game UI)
+
+#include <Wasmo.h>
 
 #include <fstream>
 #include <iostream>
