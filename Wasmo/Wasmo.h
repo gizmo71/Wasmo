@@ -7,6 +7,9 @@
 
 #include <INIReader.h>
 
+extern "C" MSFS_CALLBACK void module_init(void);
+extern "C" MSFS_CALLBACK void module_deinit(void);
+
 struct Wasmo {
 	Wasmo(const char* appName);
 	virtual ~Wasmo() { }
@@ -17,11 +20,13 @@ struct Wasmo {
 	virtual void WriteDefaultSection(std::ofstream& out);
 	virtual void AircraftLoaded(INIReader&, std::string section) { }
 	DWORD GetLastSentPacketID();
-	//TODO: hide these somehow
+private:
 	const char* appName;
 	void Dispatch(SIMCONNECT_RECV*, DWORD, void*);
-private:
 	void HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename);
+	friend void CALLBACK WasmoDispatch(SIMCONNECT_RECV*, DWORD, void*);
+	friend void module_init(void);
+	friend void module_deinit(void);
 };
 
 extern HANDLE g_hSimConnect;
