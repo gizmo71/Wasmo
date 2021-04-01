@@ -60,57 +60,35 @@ void RudderTillerzmo::init() {
 #if _DEBUG
 	cout << "RudderTillerzmo: map client events" << endl;
 #endif
-	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER, "AXIS_RUDDER_SET"))) {
-		cerr << "RudderTillerzmo: couldn't map rudder set event" << endl;
-	}
-	if (FAILED(SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_TILLER, "RUDDER_AXIS_MINUS"))) {
-		cerr << "RudderTillerzmo: couldn't map tiller set event" << endl;
-	}
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_RUDDER, "AXIS_RUDDER_SET");
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_TILLER, "RUDDER_AXIS_MINUS");
 
 #if _DEBUG
 	cout << "RudderTillerzmo: OnOpen add to group" << endl;
 #endif
-	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER, TRUE))) {
-		cerr << "RudderTillerzmo: couldn't add rudder event to group" << endl;
-	}
-	if (FAILED(SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_TILLER, TRUE))) {
-		cerr << "RudderTillerzmo: couldn't add steering event to group" << endl;
-	}
+	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_RUDDER, TRUE);
+	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_RUDDER_TILLER, EVENT_TILLER, TRUE);
 
 #if _DEBUG
 	cout << "RudderTillerzmo: OnOpen set group priority" << endl;
 #endif
-	if (FAILED(SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE))) {
-		cerr << "RudderTillerzmo: couldn't set rudder/tiller notification group priority" << endl;
-	}
+	SimConnect_SetNotificationGroupPriority(g_hSimConnect, GROUP_RUDDER_TILLER, SIMCONNECT_GROUP_PRIORITY_HIGHEST_MASKABLE);
 
 #if _DEBUG
 	cout << "RudderTillerzmo: add data definition" << endl;
 #endif
-	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
-		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, speedEpsilon)))
-	{
-		cerr << "RudderTillerzmo: couldn't map ground velocity data" << endl;
-	}
-	if (FAILED(SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_ON_GROUND,
-		"SIM ON GROUND", "Bool", SIMCONNECT_DATATYPE_INT32, 0.5)))
-	{
-		cerr << "RudderTillerzmo: couldn't map on ground data" << endl;
-	}
+	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_SPEED,
+		"GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT64, speedEpsilon);
+	SimConnect_AddToDataDefinition(g_hSimConnect, DEFINITION_ON_GROUND,
+		"SIM ON GROUND", "Bool", SIMCONNECT_DATATYPE_INT32, 0.5);
 
 #if _DEBUG
 	cout << "RudderTillerzmo: requesting data feeds" << endl;
 #endif
-	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPEED, DEFINITION_SPEED,
-		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 10, 0)))
-	{
-		cerr << "RudderTillerzmo: Could not request speed feed" << endl;
-	}
-	if (FAILED(SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_ON_GROUND, DEFINITION_ON_GROUND,
-		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0)))
-	{
-		cerr << "RudderTillerzmo: Could not request on ground feed" << endl;
-	}
+	SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_SPEED, DEFINITION_SPEED,
+		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 10, 0);
+	SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_ON_GROUND, DEFINITION_ON_GROUND,
+		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_VISUAL_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0);
 }
 
 void RudderTillerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
@@ -131,7 +109,7 @@ void RudderTillerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 #endif
 		break;
 	default:
-		cerr << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
+		cout << "RudderTillerzmo: Received unknown event " << evt->uEventID << endl;
 		return;
 	}
 	SendDemand();
@@ -157,7 +135,7 @@ void RudderTillerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		break;
 	}
 	default:
-		cerr << "RudderTillerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+		cout << "RudderTillerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
 		return;
 	}
 	SendDemand();
@@ -191,7 +169,6 @@ void RudderTillerzmo::SendDemand() {
 		<< " from factors for tiller " << tillerFactor << " and pedals " << pedalsFactor << endl;
 #endif
 	auto value = static_cast<long>(maxRawMagnitude * modulatedDemand);
-	if (FAILED(SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value, GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT))) {
-		cerr << "RudderTillerzmo: Could not fire modulated rudder event" << endl;
-	}
+	SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_RUDDER, value,
+		GROUP_RUDDER_TILLER, SIMCONNECT_EVENT_FLAG_DEFAULT);
 }

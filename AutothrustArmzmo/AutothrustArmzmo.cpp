@@ -90,7 +90,7 @@ void AutothrustArmzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 			SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_ONCE, SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
 		break;
 	default:
-		cerr << "AutothrustArmzmo: Received unknown event " << evt->uEventID << endl;
+		cout << "AutothrustArmzmo: Received unknown event " << evt->uEventID << endl;
 	}
 }
 
@@ -116,6 +116,6 @@ void AutothrustArmzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		break;
 	}
 	default:
-		cerr << "AutothrustArmzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+		cout << "AutothrustArmzmo: Received unknown data: " << pObjData->dwRequestID << endl;
 	}
 }

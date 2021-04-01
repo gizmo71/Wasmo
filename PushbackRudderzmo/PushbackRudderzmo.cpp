@@ -112,7 +112,7 @@ void PushbackRudderzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		break;
 	}
 	default:
-		cerr << "PushbackRudderzmo: Received unknown data: " << pObjData->dwRequestID << endl;
+		cout << "PushbackRudderzmo: Received unknown data: " << pObjData->dwRequestID << endl;
 		return;
 	}
 }

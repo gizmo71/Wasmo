@@ -55,7 +55,7 @@ void Wasmo::HandleFilename(SIMCONNECT_RECV_EVENT_FILENAME* eventFilename) {
 		break;
 	}
 	default:
-		cerr << "Wasmo(" << appName << "): Received unknown event filename " << eventFilename->uEventID << endl;
+		cout << "Wasmo(" << appName << "): Received unknown event filename " << eventFilename->uEventID << endl;
 	}
 }
 
@@ -85,7 +85,7 @@ void Wasmo::Dispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
 		SIMCONNECT_RECV_EXCEPTION* exception = (SIMCONNECT_RECV_EXCEPTION*)pData;
 		// http://www.prepar3d.com/SDKv5/sdk/simconnect_api/references/structures_and_enumerations.html#SIMCONNECT_EXCEPTION
-		cerr << "Wasmo(" << appName << "): RX Exception :-( " << exception->dwException << " from packet " << exception->dwSendID << endl;
+		cout << "Wasmo(" << appName << "): RX Exception :-( " << exception->dwException << " from packet " << exception->dwSendID << endl;
 		break;
 	}
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
@@ -98,9 +98,6 @@ void Wasmo::Dispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 		cout << "Wasmo(" << appName << "): Received unknown dispatch ID " << pData->dwID << endl;
 		break;
 	}
-#if _DEBUG
-	cout << "Wasmo(" << appName << "): done responding, will it call again?" << endl;
-#endif
 }
 
 extern "C" MSFS_CALLBACK void module_init(void) {
@@ -124,17 +121,11 @@ Wasmo::Wasmo(const char* appName) {
 	this->appName = appName;
 #if _DEBUG
 	cout << boolalpha << nounitbuf << "Wasmo::Wasmo for " << appName << endl;
-	cerr << boolalpha << nounitbuf << "cerr for " << appName << " stream set answer " << 42 << endl;
-	clog << boolalpha << unitbuf << "clog for " << appName << " stream set answer " << 42 << endl;
 #endif
-
 	g_hSimConnect = 0;
 	SimConnect_Open(&g_hSimConnect, appName, nullptr, 0, 0, 0);
-
 #if _DEBUG
 	cout << "Wasmo(" << appName << "): constructed and connected" << endl;
-	cerr << "Wasmo(" << appName << "): constructed and connected" << endl;
-	clog << "Wasmo(" << appName << "): constructed and connected" << endl;
 #endif
 }
 
