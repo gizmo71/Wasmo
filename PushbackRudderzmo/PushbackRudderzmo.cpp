@@ -68,8 +68,10 @@ void PushbackRudderzmo::init() {
 #endif
 	SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_STATE, DEFINITION_STATE,
 		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0);
+#if FALSE // Causes an exception
 	SimConnect_RequestDataOnSimObject(g_hSimConnect, REQUEST_HEADING, DEFINITION_HEADING,
 		SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_NEVER, SIMCONNECT_DATA_REQUEST_FLAG_CHANGED, 0, 0, 0);
+#endif
 }
 
 void PushbackRudderzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
