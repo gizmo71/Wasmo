@@ -16,7 +16,7 @@ struct Wasmo {
 	static Wasmo* create();
 	virtual void init() = 0;
 	virtual void Handle(SIMCONNECT_RECV_EVENT*) { }
-	virtual void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*) = 0;
+	virtual void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*) { }
 	virtual void WriteDefaultSection(std::ofstream& out);
 	virtual void AircraftLoaded(INIReader&, std::string section) { }
 	DWORD GetLastSentPacketID();
