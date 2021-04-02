@@ -19,6 +19,7 @@ struct PMCallsClientData {
 	INT16 v1;
 	INT16 vr;
 	INT8 autobrake; // 0 for off, 1 for lo, 2 for med, 3 for max
+	INT8 autobraking; // 0/1
 	INT8 weatherRadar; // 0 = 1, 1 = off, 2 = 2
 	INT8 pws;
 	INT8 tcas; // 0 standby, 1 TA, 2 TA/RA
@@ -51,6 +52,7 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 #if _DEBUG
 	cout << "Controlzmo: added client data defs; #" << GetLastSentPacketID() << endl;
 #endif
@@ -71,13 +73,14 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 		ID v1Id = check_named_variable("AIRLINER_V1_SPEED");
 		ID vrId = check_named_variable("AIRLINER_VR_SPEED");
 		ID autobrakeId = check_named_variable("XMLVAR_Autobrakes_Level");
+		ID autobrakingId = check_named_variable("A32NX_AUTOBRAKES_BRAKING");
 		ID radarId = check_named_variable("XMLVAR_A320_WeatherRadar_Sys");
 		ID pwsId = check_named_variable("A32NX_SWITCH_RADAR_PWS_Position");
 		ID tcasId = check_named_variable("A32NX_SWITCH_TCAS_Position");
 
-		if (vrId == -1 || v1Id == -1 || autobrakeId == -1 || radarId == -1 || pwsId == -1 || tcasId == -1) {
+		if (vrId == -1 || v1Id == -1 || autobrakeId == -1 || autobrakingId == -1 || radarId == -1 || pwsId == -1 || tcasId == -1) {
 #if _DEBUG
-			cout << "Controlzmo: one or more ID not found; skipping send " << radarId << pwsId << tcasId << endl;
+			cout << "Controlzmo: one or more ID not found; skipping send" << endl;
 #endif
 			break;
 		}
@@ -85,6 +88,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 			get_named_variable_value(v1Id),
 			get_named_variable_value(vrId),
 			get_named_variable_value(autobrakeId),
+			get_named_variable_value(autobrakingId),
 			get_named_variable_value(radarId),
 			get_named_variable_value(pwsId),
 			get_named_variable_value(tcasId),
@@ -95,6 +99,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 			<< " V1 " << clientData.v1 << " id " << v1Id
 			<< " VR " << clientData.vr << " id " << vrId
 			<< " autobrake " << (int)clientData.autobrake << " id " << autobrakeId
+			<< " ...ing " << (int)clientData.autobraking << " id " << autobrakingId
 			<< " radar " << (int)clientData.weatherRadar << " id " << radarId
 			<< " pws " << (int)clientData.pws << " id " << pwsId
 			<< " TCAS " << (int)clientData.tcas << " id " << tcasId
