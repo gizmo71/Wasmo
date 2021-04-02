@@ -93,7 +93,8 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 #if _DEBUG
 		cout << "Controlzmo: pilot monitoring calls data RX:"
 			<< " V1 " << clientData.v1 << " id " << v1Id
-			<< " VR " << clientData.vr << " id " << vrId
+			<< " VR " << clientData.vr << " id " << vrId << endl
+			<< "Controlzmo:\tRX continued:"
 			<< " autobrake " << (int)clientData.autobrake << " id " << autobrakeId
 			<< " radar " << (int)clientData.weatherRadar << " id " << radarId
 			<< " pws " << (int)clientData.pws << " id " << pwsId
