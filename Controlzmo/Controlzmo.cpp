@@ -77,7 +77,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 		ID pwsId = check_named_variable("A32NX_SWITCH_RADAR_PWS_Position");
 		ID tcasId = check_named_variable("A32NX_SWITCH_TCAS_Position");
 
-		if (vrId == -1 || v1Id == -1 || autobrakeId == -1 || autobrakingId == -1 || radarId == -1 || pwsId == -1 || tcasId == -1) {
+		if (vrId == -1 || v1Id == -1 || autobrakeId == -1 || /*autobrakingId == -1 ||*/ radarId == -1 || pwsId == -1 || tcasId == -1) {
 #if _DEBUG
 			cout << "Controlzmo: at least one ID not found; skipping send" << endl;
 #endif
