@@ -13,6 +13,8 @@ enum GROUP_ID {
 enum EVENT_ID {
 	EVENT_MORE_SPOILER_TOGGLE = 7,
 	EVENT_LESS_SPOILER_ARM_GROUND,
+	EVENT_SPOILER_ARM_ON,
+	EVENT_SPOILER_ARM_OFF,
 	EVENT_SPOILER_SET,
 };
 
@@ -45,9 +47,12 @@ Wasmo* Wasmo::create() {
 void Spoilerzmo::init() {
 	cout << "Spoilerzmo: init" << endl;
 
-	//TODO: consider using S_A_ON/OFF instead of _TOGGLE to avoid some conditionals.
+	// These are the input events.
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_LESS_SPOILER_ARM_GROUND, "SPOILERS_ARM_TOGGLE");
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_MORE_SPOILER_TOGGLE, "SPOILERS_TOGGLE");
+	// These are output events only.
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILER_ARM_ON, "SPOILERS_ARM_ON");
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILER_ARM_OFF, "SPOILERS_ARM_OFF");
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILER_SET, "SPOILERS_SET");
 
 	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_LESS_SPOILER_ARM_GROUND, TRUE);
@@ -106,30 +111,29 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	INT32 handleData = -1;
 	SIMCONNECT_CLIENT_EVENT_ID eventToSend = -1;
 
-	//TODO: sadly, the standard simvars no longer work with the A32NX. :-(
-	ID idArmed = check_named_variable("A32NX_SPOILERS_ARMED");
 #if _DEBUG
 	cout << "Spoilerzmo: RX data " << pObjData->dwRequestID << " current position " << spoilersData->spoilerHandle << ", armed? " << spoilersData->spoilersArmed << endl;
 #endif
+	//TODO: sadly, the standard simvar no longer works with the A32NX. :-(
+	ID idArmed = check_named_variable("A32NX_SPOILERS_ARMED");
 	if (idArmed != -1) {
-		ENUM boolUnits = get_units_enum("Bool");
-		spoilersData->spoilersArmed |= (int)get_named_variable_typed_value(idArmed, boolUnits);
-	}
+		spoilersData->spoilersArmed |= (int)get_named_variable_value(idArmed);
 #if _DEBUG
-	cout << "Spoilerzmo: after massage, armed?" << spoilersData->spoilersArmed << endl;
+		cout << "Spoilerzmo: after massage with " << idArmed << " armed? " << spoilersData->spoilersArmed << endl;
 #endif
+	}
 
 	switch (pObjData->dwRequestID) {
 	case REQUEST_LESS_SPOILER:
 		if (spoilersData->spoilerHandle > 0) {
 			handleData = max(spoilersData->spoilerHandle - 25, 0);
-		} else if (spoilersData->spoilersArmed == 0) {
-			eventToSend = EVENT_LESS_SPOILER_ARM_GROUND;
+		} else /*if (spoilersData->spoilersArmed == 0)*/ {
+			eventToSend = EVENT_SPOILER_ARM_ON;
 		}
 		break;
 	case REQUEST_MORE_SPOILER:
 		if (spoilersData->spoilersArmed != 0) {
-			eventToSend = EVENT_LESS_SPOILER_ARM_GROUND;
+			eventToSend = EVENT_SPOILER_ARM_OFF;
 			handleData = 0;
 		} else if (spoilersData->spoilerHandle < 100) {
 			handleData = min(spoilersData->spoilerHandle + 25, 100);
@@ -147,23 +151,15 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	}
 
 	if (handleData != -1) {
-#if FALSE
-		SimConnect_SetDataOnSimObject(g_hSimConnect, DEFINITION_SPOILER_HANDLE, SIMCONNECT_OBJECT_ID_USER,
-			SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, sizeof(handleData), &handleData);
-		ID idPosition = check_named_variable("A32NX_SPOILERS_HANDLE_POSITION");
-		if (idPosition != -1) {
-			set_named_variable_value(idPosition, handleData / 100.0);
-		}
-#else
-		DWORD eventData = handleData / 100.0 * 16383;
+		DWORD eventData = handleData * 163.83;
 		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILER_SET, eventData, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
-#endif
 #if _DEBUG
-		cout << "Spoilerzmo: sent new handle position " << handleData << " #" << GetLastSentPacketID() << endl;
+		cout << "Spoilerzmo: sent new handle position " << handleData << "->" << eventData << " #" << GetLastSentPacketID() << endl;
 #endif
 	}
 
 #if _DEBUG
-	cout << "Spoilerzmo: RX handled" << endl;
+	if (handleData == -1 && eventToSend == -1)
+		cout << "Spoilerzmo: RX handled but no action taken" << endl;
 #endif
 }
