@@ -151,7 +151,8 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	}
 
 	if (handleData != -1) {
-		DWORD eventData = handleData * 163.83;
+		DWORD eventData = handleData * 164;
+		eventData = max(eventData, 16383);
 		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILER_SET, eventData, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
 #if _DEBUG
 		cout << "Spoilerzmo: sent new handle position " << handleData << "->" << eventData << " #" << GetLastSentPacketID() << endl;
