@@ -1,5 +1,4 @@
 ﻿#include <Wasmo.h>
-#include <MSFS/Legacy/gauges.h>
 
 #include <fstream>
 #include <iostream>

@@ -4,6 +4,7 @@
 #include <MSFS\MSFS.h>
 #include <MSFS\MSFS_WindowsTypes.h>
 #include <SimConnect.h>
+#include <MSFS/Legacy/gauges.h>
 
 #include <INIReader.h>
 
