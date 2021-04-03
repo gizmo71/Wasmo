@@ -127,7 +127,7 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	case REQUEST_LESS_SPOILER:
 		if (spoilersData->spoilerHandle > 0) {
 			handleData = max(spoilersData->spoilerHandle - 25, 0);
-		} else /*if (spoilersData->spoilersArmed == 0)*/ {
+		} else {
 			eventToSend = EVENT_SPOILER_ARM_ON;
 		}
 		break;
