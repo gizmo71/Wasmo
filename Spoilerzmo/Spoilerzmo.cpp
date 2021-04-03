@@ -48,7 +48,7 @@ void Spoilerzmo::init() {
 	//TODO: consider using S_A_ON/OFF instead of _TOGGLE to avoid some conditionals.
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_LESS_SPOILER_ARM_GROUND, "SPOILERS_ARM_TOGGLE");
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_MORE_SPOILER_TOGGLE, "SPOILERS_TOGGLE");
-	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_MORE_SPOILER_TOGGLE, "SPOILERS_SET");
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_SPOILER_SET, "SPOILERS_SET");
 
 	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_LESS_SPOILER_ARM_GROUND, TRUE);
 	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_MORE_SPOILER_TOGGLE, TRUE);
@@ -113,7 +113,7 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 #endif
 	if (idArmed != -1) {
 		ENUM boolUnits = get_units_enum("Bool");
-		spoilersData->spoilersArmed = get_named_variable_typed_value(idArmed, boolUnits);
+		spoilersData->spoilersArmed |= (int)get_named_variable_typed_value(idArmed, boolUnits);
 	}
 #if _DEBUG
 	cout << "Spoilerzmo: after massage, armed?" << spoilersData->spoilersArmed << endl;
@@ -150,17 +150,17 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 #if FALSE
 		SimConnect_SetDataOnSimObject(g_hSimConnect, DEFINITION_SPOILER_HANDLE, SIMCONNECT_OBJECT_ID_USER,
 			SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, sizeof(handleData), &handleData);
+		ID idPosition = check_named_variable("A32NX_SPOILERS_HANDLE_POSITION");
+		if (idPosition != -1) {
+			set_named_variable_value(idPosition, handleData / 100.0);
+		}
 #else
-		DWORD eventData = handleData / 100.0 * 32767;
+		DWORD eventData = handleData / 100.0 * 16383;
 		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILER_SET, eventData, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
 #endif
 #if _DEBUG
 		cout << "Spoilerzmo: sent new handle position " << handleData << " #" << GetLastSentPacketID() << endl;
 #endif
-		ID idPosition = check_named_variable("A32NX_SPOILERS_HANDLE_POSITION");
-		if (idPosition != -1) {
-			set_named_variable_value(idPosition, handleData / 100.0);
-		}
 	}
 
 #if _DEBUG
