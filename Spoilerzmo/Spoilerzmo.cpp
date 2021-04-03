@@ -99,25 +99,34 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_EVENT* evt) {
 }
 
 void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
-#if _DEBUG
-	cout << "Spoilerzmo: RX data " << pObjData->dwRequestID << endl;
-#endif
-
 	SpoilersData* spoilersData = (SpoilersData*)&pObjData->dwData;
 	INT32 handleData = -1;
-	SIMCONNECT_CLIENT_EVENT_ID toSend = -1;
+	SIMCONNECT_CLIENT_EVENT_ID eventToSend = -1;
+
+	//TODO: sadly, the standard simvars no longer work with the A32NX. :-(
+	ID idArmed = check_named_variable("A32NX_SPOILERS_ARMED");
+#if _DEBUG
+	cout << "Spoilerzmo: RX data " << pObjData->dwRequestID << " current position " << spoilersData->spoilerHandle << ", armed? " << spoilersData->spoilersArmed << endl;
+#endif
+	if (idArmed != -1) {
+		ENUM boolUnits = get_units_enum("Bool");
+		spoilersData->spoilersArmed = get_named_variable_typed_value(idArmed, boolUnits);
+	}
+#if _DEBUG
+	cout << "Spoilerzmo: after massage, armed?" << spoilersData->spoilersArmed << endl;
+#endif
 
 	switch (pObjData->dwRequestID) {
 	case REQUEST_LESS_SPOILER:
 		if (spoilersData->spoilerHandle > 0) {
 			handleData = max(spoilersData->spoilerHandle - 25, 0);
 		} else if (spoilersData->spoilersArmed == 0) {
-			toSend = EVENT_LESS_SPOILER_ARM_GROUND;
+			eventToSend = EVENT_LESS_SPOILER_ARM_GROUND;
 		}
 		break;
 	case REQUEST_MORE_SPOILER:
 		if (spoilersData->spoilersArmed != 0) {
-			toSend = EVENT_LESS_SPOILER_ARM_GROUND;
+			eventToSend = EVENT_LESS_SPOILER_ARM_GROUND;
 			handleData = 0;
 		} else if (spoilersData->spoilerHandle < 100) {
 			handleData = min(spoilersData->spoilerHandle + 25, 100);
@@ -127,10 +136,10 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		cout << "Spoilerzmo: Received unknown data: " << pObjData->dwRequestID << endl;
 	}
 
-	if (toSend != -1) {
-		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, toSend, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
+	if (eventToSend != -1) {
+		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, eventToSend, 0, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
 #if _DEBUG
-		cout << "Spoilerzmo: sending " << toSend << " #" << GetLastSentPacketID() << endl;
+		cout << "Spoilerzmo: sent event " << eventToSend << " #" << GetLastSentPacketID() << endl;
 #endif
 	}
 
@@ -138,8 +147,12 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 		SimConnect_SetDataOnSimObject(g_hSimConnect, DEFINITION_SPOILER_HANDLE, SIMCONNECT_OBJECT_ID_USER,
 			SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, sizeof(handleData), &handleData);
 #if _DEBUG
-		cout << "Spoilerzmo: sending new handle position " << handleData << " #" << GetLastSentPacketID() << endl;
+		cout << "Spoilerzmo: sent new handle position " << handleData << " #" << GetLastSentPacketID() << endl;
 #endif
+		ID idPosition = check_named_variable("A32NX_SPOILERS_HANDLE_POSITION");
+		if (idPosition != -1) {
+			set_named_variable_value(idPosition, handleData / 100.0);
+		}
 	}
 
 #if _DEBUG
