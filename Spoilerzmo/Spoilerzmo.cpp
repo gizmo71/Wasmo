@@ -13,6 +13,7 @@ enum GROUP_ID {
 enum EVENT_ID {
 	EVENT_MORE_SPOILER_TOGGLE = 7,
 	EVENT_LESS_SPOILER_ARM_GROUND,
+	EVENT_SPOILER_SET,
 };
 
 enum DATA_DEFINE_ID {
@@ -44,8 +45,10 @@ Wasmo* Wasmo::create() {
 void Spoilerzmo::init() {
 	cout << "Spoilerzmo: init" << endl;
 
+	//TODO: consider using S_A_ON/OFF instead of _TOGGLE to avoid some conditionals.
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_LESS_SPOILER_ARM_GROUND, "SPOILERS_ARM_TOGGLE");
 	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_MORE_SPOILER_TOGGLE, "SPOILERS_TOGGLE");
+	SimConnect_MapClientEventToSimEvent(g_hSimConnect, EVENT_MORE_SPOILER_TOGGLE, "SPOILERS_SET");
 
 	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_LESS_SPOILER_ARM_GROUND, TRUE);
 	SimConnect_AddClientEventToNotificationGroup(g_hSimConnect, GROUP_SPOILERS, EVENT_MORE_SPOILER_TOGGLE, TRUE);
@@ -144,8 +147,13 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 	}
 
 	if (handleData != -1) {
+#if FALSE
 		SimConnect_SetDataOnSimObject(g_hSimConnect, DEFINITION_SPOILER_HANDLE, SIMCONNECT_OBJECT_ID_USER,
 			SIMCONNECT_DATA_REQUEST_FLAG_DEFAULT, 0, sizeof(handleData), &handleData);
+#else
+		DWORD eventData = handleData / 100.0 * 32767;
+		SimConnect_TransmitClientEvent(g_hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_SPOILER_SET, eventData, GROUP_SPOILERS, SIMCONNECT_EVENT_FLAG_DEFAULT);
+#endif
 #if _DEBUG
 		cout << "Spoilerzmo: sent new handle position " << handleData << " #" << GetLastSentPacketID() << endl;
 #endif
