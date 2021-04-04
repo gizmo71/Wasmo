@@ -6,24 +6,15 @@
 
 using namespace std;
 
-enum GROUP_ID {
-	GROUP_SPOILERS = 13,
-};
-
-enum EVENT_ID {
-	EVENT_MORE_SPOILER_TOGGLE = 7,
+enum ENUMERATED_VALUES {
+	GROUP_SPOILERS = 7,
+	EVENT_MORE_SPOILER_TOGGLE = 13,
 	EVENT_LESS_SPOILER_ARM_GROUND,
 	EVENT_SPOILER_ARM_ON,
 	EVENT_SPOILER_ARM_OFF,
 	EVENT_SPOILER_SET,
-};
-
-enum DATA_DEFINE_ID {
 	DEFINITION_SPOILERS = 42,
 	DEFINITION_SPOILER_HANDLE,
-};
-
-enum DATA_REQUEST_ID {
 	REQUEST_MORE_SPOILER = 69,
 	REQUEST_LESS_SPOILER,
 };
@@ -114,7 +105,7 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 #if _DEBUG
 	cout << "Spoilerzmo: RX data " << pObjData->dwRequestID << " current position " << spoilersData->spoilerHandle << ", armed? " << spoilersData->spoilersArmed << endl;
 #endif
-	//TODO: sadly, the standard simvar no longer works with the A32NX. :-(
+	// Sadly, the standard simvar no longer works with the A32NX. :-(
 	ID idArmed = check_named_variable("A32NX_SPOILERS_ARMED");
 	if (idArmed != -1) {
 		spoilersData->spoilersArmed |= (int)get_named_variable_value(idArmed);
