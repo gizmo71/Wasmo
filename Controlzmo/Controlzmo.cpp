@@ -5,22 +5,20 @@
 
 using namespace std;
 
-// Can we just wrap all the definitions up into a single enum?!
-enum DATA_DEFINE_ID {
-	EVENT_TICK = 69,
-//enum CLIENT_DATA_ID {
-	CLIENT_DATA_VSPEED_CALLS = 13,
-//enum CLIENT_DATA_DEFINITION_ID {
-	CLIENT_DATA_DEFINITION_VSPEED_CALLS = CLIENT_DATA_VSPEED_CALLS,
+enum CONTROLZMO_ID {
+	EVENT_TICK,
+	CLIENT_DATA_VSPEED_CALLS,
+	CLIENT_DATA_DEFINITION_VSPEED_CALLS,
 };
 
-struct PMCallsClientData {
+struct alignas(8) PMCallsClientData {
 	INT16 v1;
 	INT16 vr;
 	INT8 autobrake; // 0 for off, 1 for lo, 2 for med, 3 for max
 	INT8 weatherRadar; // 0 = 1, 1 = off, 2 = 2
 	INT8 pws;
 	INT8 tcas; // 0 standby, 1 TA, 2 TA/RA
+	INT8 tcasTraffic; // 0-3
 };
 
 struct Controlzmo : Wasmo {
@@ -41,11 +39,12 @@ void Controlzmo::init() {
 	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.VSpeeds", CLIENT_DATA_VSPEED_CALLS);
 	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, sizeof(PMCallsClientData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
 #if _DEBUG
-	cout << "Controlzmo: created client data; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: created client data of size " << sizeof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
 #endif
 
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT16);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT16);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
@@ -73,10 +72,11 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 		ID radarId = check_named_variable("XMLVAR_A320_WeatherRadar_Sys");
 		ID pwsId = check_named_variable("A32NX_SWITCH_RADAR_PWS_Position");
 		ID tcasId = check_named_variable("A32NX_SWITCH_TCAS_Position");
+		ID tcasTrafficId = check_named_variable("A32NX_SWITCH_TCAS_Traffic_Position");
 
-		if (vrId == -1 || v1Id == -1 || autobrakeId == -1 || radarId == -1 || pwsId == -1 || tcasId == -1) {
+		if (vrId == -1 && v1Id == -1 && autobrakeId == -1 && radarId == -1 && pwsId == -1 && tcasId == -1 && tcasTrafficId == -1) {
 #if _DEBUG
-			cout << "Controlzmo: at least one ID not found; skipping send" << endl;
+			cout << "Controlzmo: no IDs found; skipping send" << endl;
 #endif
 			break;
 		}
@@ -87,8 +87,8 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 			get_named_variable_value(radarId),
 			get_named_variable_value(pwsId),
 			get_named_variable_value(tcasId),
+			get_named_variable_value(tcasTrafficId),
 		};
-		if (clientData.weatherRadar == 0 || clientData.weatherRadar == 1) clientData.weatherRadar = 1 - clientData.weatherRadar;
 #if _DEBUG
 		cout << "Controlzmo: pilot monitoring calls data RX:"
 			<< " V1 " << clientData.v1 << " id " << v1Id
@@ -98,6 +98,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 			<< " radar " << (int)clientData.weatherRadar << " id " << radarId
 			<< " pws " << (int)clientData.pws << " id " << pwsId
 			<< " TCAS " << (int)clientData.tcas << " id " << tcasId
+			<< " traffic " << (int)clientData.tcasTraffic << " id " << tcasTrafficId
 			<< endl;
 #endif
 #if FALSE
