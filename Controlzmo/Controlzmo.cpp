@@ -56,7 +56,7 @@ void Controlzmo::init() {
 	cout << "Controlzmo: added client data defs, alignment " << alignof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
 #endif
 
-	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_TICK, "1sec");
+	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_TICK, "4sec");
 #if _DEBUG
 	cout << "Controlzmo: requested sim data; #" << GetLastSentPacketID() << endl;
 #endif
