@@ -12,6 +12,7 @@ enum CONTROLZMO_ID {
 	CLIENT_DATA_DEFINITION_VSPEED_CALLS,
 };
 
+// Safer to go from largest to smallest, to avoid padding anywhere but at the end...
 struct alignas(8) PMCallsClientData {
 	INT16 v1;
 	INT16 vr;
@@ -49,14 +50,10 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
-#if FALSE
-	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
-#else
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, offsetof(struct PMCallsClientData, tcasTraffic), sizeof(PMCallsClientData::tcasTraffic));
-#endif
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, 7);
 #if _DEBUG
-	cout << "Controlzmo: added client data defs; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: added client data defs, alignment " << alignof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
 #endif
 
 	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_TICK, "1sec");
