@@ -50,10 +50,14 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
-	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, offsetof(struct PMCallsClientData, tcasTraffic), sizeof(PMCallsClientData::tcasTraffic));
-	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, 7);
+	// Handle the last one differently so that we can pad properly.
+	DWORD offset = offsetof(struct PMCallsClientData, tcasTraffic);
+	DWORD size = sizeof(PMCallsClientData::tcasTraffic);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, offset, size);
+	DWORD padding = alignof(PMCallsClientData) - (size + offset) % alignof(PMCallsClientData);
+	if (padding) SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, padding);
 #if _DEBUG
-	cout << "Controlzmo: added client data defs, alignment " << alignof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: added client data defs, padding " << padding << " from " << size << "@" << offset << "; #" << GetLastSentPacketID() << endl;
 #endif
 
 	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_TICK, "4sec");
