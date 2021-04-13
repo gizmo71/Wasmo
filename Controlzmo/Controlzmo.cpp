@@ -1,15 +1,22 @@
 ﻿#include <Wasmo.h>
 
 #include <cstddef>
+#include <map>
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 
 enum CONTROLZMO_ID {
-	EVENT_TICK,
-	CLIENT_DATA_VSPEED_CALLS,
+	EVENT_6HZ,
+	EVENT_1SEC,
+	EVENT_4SEC,
+	CLIENT_DATA_ID_VSPEED_CALLS,
 	CLIENT_DATA_DEFINITION_VSPEED_CALLS,
+	REQUEST_ID_LVAR_REQUEST,
+	CLIENT_DATA_ID_LVAR_REQUEST,
+	CLIENT_DATA_ID_LVAR_RESPONSE,
+	CLIENT_DATA_DEFINITION_LVAR,
 };
 
 // Safer to go from largest to smallest, to avoid padding anywhere but at the end...
@@ -23,11 +30,34 @@ struct alignas(8) PMCallsClientData {
 	INT8 tcasTraffic; // 0-3
 };
 
+const int32_t LVAR_POLL_ONCE = 0;
+const int32_t LVAR_POLL_6Hz = 167;
+const int32_t LVAR_POLL_1SEC = 1000;
+const int32_t LVAR_POLL_4SEC = 4000;
+struct alignas(8) LVarData {
+	char varName[52];
+	int32_t id; // One of LVAR_POLL_* on input; -1 on output if variable not defined.
+	double value; // On request, sets the "current" value.
+};
+
+struct alignas(8) LVarState {
+	int32_t id;
+	int32_t milliseconds;
+	double value;
+};
+
 struct Controlzmo : Wasmo {
-	Controlzmo() : Wasmo("Controlzmo") { }
+	Controlzmo() : Wasmo("Controlzmo") {
+#if TRUE
+		lvarStates["A32NX_OVHD_APU_MASTER_SW_PB_IS_ON"] = LVarState { -1, LVAR_POLL_4SEC, 66.6 };
+#endif
+	}
 	void init();
 	void Handle(SIMCONNECT_RECV_EVENT*);
+	void Handle(SIMCONNECT_RECV_CLIENT_DATA*);
 private:
+	void CheckAndSend();
+	map<string, LVarState> lvarStates;
 };
 
 Wasmo* Wasmo::create() {
@@ -38,10 +68,10 @@ void Controlzmo::init() {
 #if _DEBUG
 	cout << "Controlzmo: init" << endl;
 #endif
-	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.VSpeeds", CLIENT_DATA_VSPEED_CALLS);
-	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, sizeof(PMCallsClientData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
+	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.VSpeeds", CLIENT_DATA_ID_VSPEED_CALLS);
+	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_VSPEED_CALLS, sizeof(PMCallsClientData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
 #if _DEBUG
-	cout << "Controlzmo: created client data of size " << sizeof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: created VSPeeds client data of size " << sizeof(PMCallsClientData) << "; #" << GetLastSentPacketID() << endl;
 #endif
 
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT16);
@@ -51,27 +81,97 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	// Handle the last one differently so that we can pad properly.
-	DWORD offset = offsetof(struct PMCallsClientData, tcasTraffic);
+	DWORD offset = SIMCONNECT_CLIENTDATAOFFSET_AUTO; //offsetof(struct PMCallsClientData, tcasTraffic);
 	DWORD size = sizeof(PMCallsClientData::tcasTraffic);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, offset, size);
 	DWORD padding = alignof(PMCallsClientData) - (size + offset) % alignof(PMCallsClientData);
 	if (padding) SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, padding);
 #if _DEBUG
-	cout << "Controlzmo: added client data defs, padding " << padding << " from " << size << "@" << offset << "; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: added VSpeeds client data defs, padding " << padding << " from " << size << "@" << offset << "; #" << GetLastSentPacketID() << endl;
 #endif
 
-	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_TICK, "4sec");
+	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.LVarRequest", CLIENT_DATA_ID_LVAR_REQUEST);
+	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_REQUEST, sizeof(LVarData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
+	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.LVarResponse", CLIENT_DATA_ID_LVAR_RESPONSE);
+	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, sizeof(LVarData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
+#if _DEBUG
+	cout << "Controlzmo: created LVar client data of size " << sizeof(LVarData) << "; #" << GetLastSentPacketID() << endl;
+#endif
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_LVAR, SIMCONNECT_CLIENTDATAOFFSET_AUTO, sizeof(LVarData::varName));
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_LVAR, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT32);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_LVAR, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_FLOAT64);
+#if _DEBUG
+	cout << "Controlzmo: added lvar client data defs; #" << GetLastSentPacketID() << endl;
+#endif
+	SimConnect_RequestClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_REQUEST, REQUEST_ID_LVAR_REQUEST,
+		CLIENT_DATA_DEFINITION_LVAR, SIMCONNECT_CLIENT_DATA_PERIOD_ON_SET, SIMCONNECT_CLIENT_DATA_REQUEST_FLAG_DEFAULT, 0, 0, 0);
+#if _DEBUG
+	cout << "Controlzmo: requested lvar client data requests; #" << GetLastSentPacketID() << endl;
+#endif
+
+#if FALSE
+	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_6HZ, "6Hz");
+	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_1SEC, "1sec");
+#endif
+	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_4SEC, "4sec");
 #if _DEBUG
 	cout << "Controlzmo: requested sim data; #" << GetLastSentPacketID() << endl;
 #endif
 }
 
-void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
+void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 #if _DEBUG
-	cout << "Controlzmo: received event " << pEvtData->uEventID << endl;
+	cout << "Controlzmo: received client data " << clientData->dwRequestID << " def " << clientData->dwDefineID << endl;
 #endif
-	switch (pEvtData->uEventID) {
-	case EVENT_TICK: {
+	switch (clientData->dwRequestID) {
+	case REQUEST_ID_LVAR_REQUEST: {
+		LVarData* data = (LVarData*)&(clientData->dwData);
+#if _DEBUG
+		cout << "Controlzmo: asking for " << data->varName << " value code " << data->value << endl;
+#endif
+		//TODO: check for existing entry...
+		//TODO: ensure name is null terminated.
+		lvarStates[data->varName] = LVarState { -1, data->id, data->value };
+		break;
+	}
+	default:
+		cout << "Controlzmo: Received unknown client data request: " << clientData->dwRequestID << endl;
+		return;
+	}
+}
+
+void Controlzmo::CheckAndSend() {
+	LVarData toSend;
+	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ++nameState) {
+		//TODO: check something against required period.
+		//TODO: use or check ID if already present.
+		PCSTRINGZ lvarName = nameState->first.c_str();
+		if (toSend.id = check_named_variable(lvarName) == -1) continue;
+		toSend.value = get_named_variable_value(toSend.id);
+		if (toSend.value == nameState->second.value) continue;
+		strcpy(toSend.varName, lvarName);
+		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, CLIENT_DATA_DEFINITION_LVAR,
+			SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(toSend), &toSend);
+#if _DEBUG
+		cout << "Controlzmo: set LVar client data "
+			<< toSend.varName << " (" << toSend.id << ") = " << toSend.value
+			<< " ; #" << GetLastSentPacketID() << endl;
+#endif
+	}
+}
+
+void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* eventData) {
+#if _DEBUG && FALSE
+	cout << "Controlzmo: received event " << eventData->uEventID << endl;
+#endif
+	switch (eventData->uEventID) {
+	case EVENT_6HZ:
+	case EVENT_1SEC:
+		//TODO: stuff
+		break;
+	case EVENT_4SEC: {
+		CheckAndSend();
+
 		// IDs are -1 when not known
 		ID v1Id = check_named_variable("AIRLINER_V1_SPEED");
 		ID vrId = check_named_variable("AIRLINER_VR_SPEED");
@@ -114,7 +214,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 		int fwcPhase = get_named_variable_value(fwcPhaseId);
 		cout << "Controlzmo: phase FWC >>>" << fwcPhase << "<<< id " << fwcPhaseId << endl;
 #endif
-		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_VSPEED_CALLS, CLIENT_DATA_DEFINITION_VSPEED_CALLS,
+		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_VSPEED_CALLS, CLIENT_DATA_DEFINITION_VSPEED_CALLS,
 			SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(clientData), &clientData);
 #if _DEBUG
 		cout << "Controlzmo: set client data; #" << GetLastSentPacketID() << endl;
@@ -122,7 +222,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* pEvtData) {
 		break;
 	}
 	default:
-		cout << "Controlzmo: Received unknown event: " << pEvtData->uEventID << endl;
+		cout << "Controlzmo: Received unknown event: " << eventData->uEventID << endl;
 		return;
 	}
 }

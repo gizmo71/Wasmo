@@ -17,6 +17,7 @@ struct Wasmo {
 	static Wasmo* create();
 	virtual void init() = 0;
 	virtual void Handle(SIMCONNECT_RECV_EVENT*) { }
+	virtual void Handle(SIMCONNECT_RECV_CLIENT_DATA* data) { Handle((SIMCONNECT_RECV_SIMOBJECT_DATA*)data); }
 	virtual void Handle(SIMCONNECT_RECV_SIMOBJECT_DATA*) { }
 	virtual void WriteDefaultSection(std::ofstream& out);
 	virtual void AircraftLoaded(INIReader&, std::string section) { }

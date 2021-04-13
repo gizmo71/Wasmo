@@ -88,6 +88,9 @@ void Wasmo::Dispatch(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext) {
 		cout << "Wasmo(" << appName << "): RX Exception :-( " << exception->dwException << " from packet " << exception->dwSendID << endl;
 		break;
 	}
+	case SIMCONNECT_RECV_ID_CLIENT_DATA:
+		wasmo->Handle((SIMCONNECT_RECV_CLIENT_DATA*)pData);
+		break;
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA:
 		wasmo->Handle((SIMCONNECT_RECV_SIMOBJECT_DATA*)pData);
 		break;
