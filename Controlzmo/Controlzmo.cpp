@@ -56,7 +56,7 @@ struct Controlzmo : Wasmo {
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_CLIENT_DATA*);
 private:
-	void CheckAndSend();
+	void CheckAndSend(int32_t, bool);
 	map<string, LVarState> lvarStates;
 };
 
@@ -119,6 +119,10 @@ void Controlzmo::init() {
 #endif
 }
 
+void ensureTerminated(char* s, size_t n) {
+	s[n - 1] = '\0';
+}
+
 void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 #if _DEBUG
 	cout << "Controlzmo: received client data " << clientData->dwRequestID << " def " << clientData->dwDefineID << endl;
@@ -126,11 +130,10 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 	switch (clientData->dwRequestID) {
 	case REQUEST_ID_LVAR_REQUEST: {
 		LVarData* data = (LVarData*)&(clientData->dwData);
+		ensureTerminated(data->varName, sizeof(data->varName));
 #if _DEBUG
 		cout << "Controlzmo: asking for " << data->varName << " value code " << data->value << endl;
 #endif
-		//TODO: check for existing entry...
-		//TODO: ensure name is null terminated.
 		lvarStates[data->varName] = LVarState { -1, data->id, data->value };
 		break;
 	}
@@ -140,15 +143,21 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 	}
 }
 
-void Controlzmo::CheckAndSend() {
+void Controlzmo::CheckAndSend(int32_t period, bool checkId) {
 	LVarData toSend;
 	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ++nameState) {
-		//TODO: check something against required period.
-		//TODO: use or check ID if already present.
+		if (nameState->second.milliseconds != period) continue;
+
 		PCSTRINGZ lvarName = nameState->first.c_str();
-		if (toSend.id = check_named_variable(lvarName) == -1) continue;
+		if (checkId) {
+			toSend.id = check_named_variable(lvarName);
+		} else if (toSend.id == -1) {
+			continue;
+		}
+
 		toSend.value = get_named_variable_value(toSend.id);
 		if (toSend.value == nameState->second.value) continue;
+
 		strcpy(toSend.varName, lvarName);
 		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, CLIENT_DATA_DEFINITION_LVAR,
 			SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(toSend), &toSend);
@@ -166,11 +175,13 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* eventData) {
 #endif
 	switch (eventData->uEventID) {
 	case EVENT_6HZ:
+		CheckAndSend(LVAR_POLL_6Hz, false);
+		break;
 	case EVENT_1SEC:
-		//TODO: stuff
+		CheckAndSend(LVAR_POLL_1SEC, false);
 		break;
 	case EVENT_4SEC: {
-		CheckAndSend();
+		CheckAndSend(LVAR_POLL_4SEC, true);
 
 		// IDs are -1 when not known
 		ID v1Id = check_named_variable("AIRLINER_V1_SPEED");
