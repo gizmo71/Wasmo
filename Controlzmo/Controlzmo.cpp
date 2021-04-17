@@ -56,7 +56,8 @@ struct Controlzmo : Wasmo {
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_CLIENT_DATA*);
 private:
-	void CheckAndSend(int32_t, bool);
+	void CheckEachAndSend(int32_t, bool);
+	void Send(PCSTRINGZ lvarName, LVarState& state, bool checkId);
 	map<string, LVarState> lvarStates;
 };
 
@@ -109,10 +110,8 @@ void Controlzmo::init() {
 	cout << "Controlzmo: requested lvar client data requests; #" << GetLastSentPacketID() << endl;
 #endif
 
-#if FALSE
 	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_6HZ, "6Hz");
 	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_1SEC, "1sec");
-#endif
 	SimConnect_SubscribeToSystemEvent(g_hSimConnect, EVENT_4SEC, "4sec");
 #if _DEBUG
 	cout << "Controlzmo: requested sim data; #" << GetLastSentPacketID() << endl;
@@ -143,31 +142,34 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 	}
 }
 
-void Controlzmo::CheckAndSend(int32_t period, bool checkId) {
-	LVarData toSend;
+void Controlzmo::CheckEachAndSend(int32_t period, bool checkId) {
 	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ++nameState) {
 		if (nameState->second.milliseconds != period) continue;
-
-		PCSTRINGZ lvarName = nameState->first.c_str();
-		if (checkId) {
-			toSend.id = check_named_variable(lvarName);
-		} else if (toSend.id == -1) {
-			continue;
-		}
-
-		toSend.value = get_named_variable_value(toSend.id);
-		if (toSend.value == nameState->second.value) continue;
-		nameState->second.value = toSend.value;
-
-		strcpy(toSend.varName, lvarName);
-		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, CLIENT_DATA_DEFINITION_LVAR,
-			SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(toSend), &toSend);
-#if _DEBUG
-		cout << "Controlzmo: set LVar client data "
-			<< toSend.varName << " (" << toSend.id << ") = " << toSend.value
-			<< " ; #" << GetLastSentPacketID() << endl;
-#endif
+		Send(nameState->first.c_str(), nameState->second, checkId);
 	}
+}
+
+void Controlzmo::Send(PCSTRINGZ lvarName, LVarState& state, bool checkId) {
+	if (checkId) {
+		state.id = check_named_variable(lvarName);
+	}
+
+	auto newValue = get_named_variable_value(state.id);
+	if (newValue == state.value) return;
+	state.value = newValue;
+
+	LVarData toSend;
+	strcpy(toSend.varName, lvarName);
+	toSend.id = state.id;
+	toSend.value = newValue;
+
+	SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, CLIENT_DATA_DEFINITION_LVAR,
+		SIMCONNECT_CLIENT_DATA_SET_FLAG_DEFAULT, 0, sizeof(toSend), &toSend);
+#if _DEBUG
+	cout << "Controlzmo: set LVar client data "
+		<< toSend.varName << " (" << toSend.id << ") = " << toSend.value
+		<< " ; #" << GetLastSentPacketID() << endl;
+#endif
 }
 
 void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* eventData) {
@@ -176,13 +178,13 @@ void Controlzmo::Handle(SIMCONNECT_RECV_EVENT* eventData) {
 #endif
 	switch (eventData->uEventID) {
 	case EVENT_6HZ:
-		CheckAndSend(LVAR_POLL_6Hz, false);
+		CheckEachAndSend(LVAR_POLL_6Hz, false);
 		break;
 	case EVENT_1SEC:
-		CheckAndSend(LVAR_POLL_1SEC, false);
+		CheckEachAndSend(LVAR_POLL_1SEC, false);
 		break;
 	case EVENT_4SEC: {
-		CheckAndSend(LVAR_POLL_4SEC, true);
+		CheckEachAndSend(LVAR_POLL_4SEC, true);
 
 		// IDs are -1 when not known
 		ID v1Id = check_named_variable("AIRLINER_V1_SPEED");
