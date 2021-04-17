@@ -157,6 +157,7 @@ void Controlzmo::CheckAndSend(int32_t period, bool checkId) {
 
 		toSend.value = get_named_variable_value(toSend.id);
 		if (toSend.value == nameState->second.value) continue;
+		nameState->second.value = toSend.value;
 
 		strcpy(toSend.varName, lvarName);
 		SimConnect_SetClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, CLIENT_DATA_DEFINITION_LVAR,
