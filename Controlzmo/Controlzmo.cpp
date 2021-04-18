@@ -57,7 +57,7 @@ struct Controlzmo : Wasmo {
 	void Handle(SIMCONNECT_RECV_CLIENT_DATA*);
 private:
 	void CheckEachAndSend(int32_t, bool);
-	void Send(PCSTRINGZ lvarName, LVarState& state, bool checkId);
+	void Send(PCSTRINGZ lvarName, LVarState& state);
 	map<string, LVarState> lvarStates;
 };
 
@@ -140,16 +140,17 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 
 void Controlzmo::CheckEachAndSend(int32_t period, bool checkId) {
 	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ++nameState) {
-		if (nameState->second.milliseconds != period) continue;
-		Send(nameState->first.c_str(), nameState->second, checkId);
+		PCSTRINGZ lvarName = nameState->first.c_str();
+		if (checkId) {
+			nameState->second.id = check_named_variable(lvarName);
+		}
+
+		if (nameState->second.milliseconds == period)
+			Send(lvarName, nameState->second);
 	}
 }
 
-void Controlzmo::Send(PCSTRINGZ lvarName, LVarState& state, bool checkId) {
-	if (checkId) {
-		state.id = check_named_variable(lvarName);
-	}
-
+void Controlzmo::Send(PCSTRINGZ lvarName, LVarState& state) {
 	auto newValue = get_named_variable_value(state.id);
 	if (newValue == state.value) return;
 	state.value = newValue;
