@@ -139,14 +139,20 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 }
 
 void Controlzmo::CheckEachAndSend(int32_t period, bool checkId) {
-	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ++nameState) {
+	for (auto nameState = lvarStates.begin(); nameState != lvarStates.end(); ) {
 		PCSTRINGZ lvarName = nameState->first.c_str();
-		if (checkId) {
+		auto isOneOff = nameState->second.milliseconds == 0;
+		if (checkId || isOneOff) {
 			nameState->second.id = check_named_variable(lvarName);
 		}
 
-		if (nameState->second.milliseconds == period)
+		if (nameState->second.milliseconds == period || isOneOff)
 			Send(lvarName, nameState->second);
+
+		if (isOneOff)
+			nameState = lvarStates.erase(nameState);
+		else
+			++nameState;
 	}
 }
 
