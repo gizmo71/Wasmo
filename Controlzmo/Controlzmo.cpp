@@ -1,6 +1,5 @@
 ﻿#include <Wasmo.h>
 
-#include <cstddef>
 #include <map>
 #include <fstream>
 #include <iostream>
@@ -28,6 +27,7 @@ struct alignas(8) PMCallsClientData {
 	INT8 pws;
 	INT8 tcas; // 0 standby, 1 TA, 2 TA/RA
 	INT8 tcasTraffic; // 0-3
+	INT8 padding[7];
 };
 
 const int32_t LVAR_POLL_ONCE = 0;
@@ -81,18 +81,14 @@ void Controlzmo::init() {
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
 	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
-	// Handle the last one differently so that we can pad properly.
-	DWORD offset = SIMCONNECT_CLIENTDATAOFFSET_AUTO; //offsetof(struct PMCallsClientData, tcasTraffic);
-	DWORD size = sizeof(PMCallsClientData::tcasTraffic);
-	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, offset, size);
-	DWORD padding = alignof(PMCallsClientData) - (size + offset) % alignof(PMCallsClientData);
-	if (padding) SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, padding);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, SIMCONNECT_CLIENTDATATYPE_INT8);
+	SimConnect_AddToClientDataDefinition(g_hSimConnect, CLIENT_DATA_DEFINITION_VSPEED_CALLS, SIMCONNECT_CLIENTDATAOFFSET_AUTO, 7); // Padding
 #if _DEBUG
-	cout << "Controlzmo: added VSpeeds client data defs, padding " << padding << " from " << size << "@" << offset << "; #" << GetLastSentPacketID() << endl;
+	cout << "Controlzmo: added VSpeeds client data defs of size " << sizeof(LVarData) << "; #" << GetLastSentPacketID() << endl;
 #endif
 
 	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.LVarRequest", CLIENT_DATA_ID_LVAR_REQUEST);
-	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_REQUEST, sizeof(LVarData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
+	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_REQUEST, sizeof(LVarData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_DEFAULT);
 	SimConnect_MapClientDataNameToID(g_hSimConnect, "Controlzmo.LVarResponse", CLIENT_DATA_ID_LVAR_RESPONSE);
 	SimConnect_CreateClientData(g_hSimConnect, CLIENT_DATA_ID_LVAR_RESPONSE, sizeof(LVarData), SIMCONNECT_CREATE_CLIENT_DATA_FLAG_READ_ONLY);
 #if _DEBUG
