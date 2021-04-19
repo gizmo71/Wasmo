@@ -47,11 +47,7 @@ struct alignas(8) LVarState {
 };
 
 struct Controlzmo : Wasmo {
-	Controlzmo() : Wasmo("Controlzmo") {
-#if TRUE
-		lvarStates["A32NX_OVHD_APU_MASTER_SW_PB_IS_ON"] = LVarState { -1, LVAR_POLL_4SEC, 66.6 };
-#endif
-	}
+	Controlzmo() : Wasmo("Controlzmo") { }
 	void init();
 	void Handle(SIMCONNECT_RECV_EVENT*);
 	void Handle(SIMCONNECT_RECV_CLIENT_DATA*);
