@@ -30,6 +30,7 @@ struct alignas(8) LVarState {
 	int32_t id;
 	int32_t milliseconds;
 	double value;
+	double defaultValue;
 };
 
 struct Controlzmo : Wasmo {
@@ -94,7 +95,7 @@ void Controlzmo::Handle(SIMCONNECT_RECV_CLIENT_DATA* clientData) {
 #if _DEBUG
 		cout << "Controlzmo: asking for " << data->varName << " value code " << data->value << endl;
 #endif
-		lvarStates[data->varName] = LVarState { -1, data->id, data->value };
+		lvarStates[data->varName] = LVarState { -1, data->id, data->value, data->value };
 		break;
 	}
 	default:
@@ -122,7 +123,7 @@ void Controlzmo::CheckEachAndSend(int32_t period, bool checkId) {
 }
 
 void Controlzmo::Send(PCSTRINGZ lvarName, LVarState& state) {
-	auto newValue = get_named_variable_value(state.id);
+	auto newValue = state.id == -1 ? state.defaultValue : get_named_variable_value(state.id);
 	if (newValue == state.value) return;
 	state.value = newValue;
 
