@@ -103,10 +103,11 @@ void Spoilerzmo::Handle(SIMCONNECT_RECV_SIMOBJECT_DATA* pObjData) {
 #endif
 	// Sadly, the standard simvar no longer works with the A32NX. :-(
 	ID idArmed = check_named_variable("A32NX_SPOILERS_ARMED");
-	if (idArmed != -1) {
-		spoilersData->spoilersArmed |= (int)get_named_variable_value(idArmed);
+	ID idActive = check_named_variable("A32NX_SPOILERS_GROUND_SPOILERS_ACTIVE");
+	if (idArmed != -1 && idActive != -1) {
+		spoilersData->spoilersArmed |= get_named_variable_value(idArmed) || get_named_variable_value(idActive);
 #if _DEBUG
-		cout << "Spoilerzmo: after massage with " << idArmed << " armed? " << spoilersData->spoilersArmed << endl;
+		cout << "Spoilerzmo: after massage with armed/active? " << spoilersData->spoilersArmed << endl;
 #endif
 	}
 
