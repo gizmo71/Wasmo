@@ -9,8 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inih", "inih\inih.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RudderTillerzmo", "RudderTillerzmo\RudderTillerzmo.vcxproj", "{4804B696-1151-4CF1-8750-033A3FB3C085}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Spoilerzmo", "Spoilerzmo\Spoilerzmo.vcxproj", "{BA520298-2637-4408-8B80-5897BDA66007}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AutothrustArmzmo", "AutothrustArmzmo\AutothrustArmzmo.vcxproj", "{47B6A07E-4AA9-468D-9123-C336926E0BDA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PushbackRudderzmo", "PushbackRudderzmo\PushbackRudderzmo.vcxproj", "{58DFB146-B0C2-4362-A28B-59FCCEF13E27}"
@@ -35,10 +33,6 @@ Global
 		{4804B696-1151-4CF1-8750-033A3FB3C085}.Debug|MSFS.Build.0 = Debug|MSFS
 		{4804B696-1151-4CF1-8750-033A3FB3C085}.Release|MSFS.ActiveCfg = Release|MSFS
 		{4804B696-1151-4CF1-8750-033A3FB3C085}.Release|MSFS.Build.0 = Release|MSFS
-		{BA520298-2637-4408-8B80-5897BDA66007}.Debug|MSFS.ActiveCfg = Debug|MSFS
-		{BA520298-2637-4408-8B80-5897BDA66007}.Debug|MSFS.Build.0 = Debug|MSFS
-		{BA520298-2637-4408-8B80-5897BDA66007}.Release|MSFS.ActiveCfg = Release|MSFS
-		{BA520298-2637-4408-8B80-5897BDA66007}.Release|MSFS.Build.0 = Release|MSFS
 		{47B6A07E-4AA9-468D-9123-C336926E0BDA}.Debug|MSFS.ActiveCfg = Debug|MSFS
 		{47B6A07E-4AA9-468D-9123-C336926E0BDA}.Debug|MSFS.Build.0 = Debug|MSFS
 		{47B6A07E-4AA9-468D-9123-C336926E0BDA}.Release|MSFS.ActiveCfg = Release|MSFS
